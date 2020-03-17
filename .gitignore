@@ -19,6 +19,7 @@
 # Godot
 .import/
 logs/
+assets/
 default_env.tres
 
 # VSCode

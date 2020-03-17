@@ -1,0 +1,38 @@
+[gd_scene load_steps=5 format=2]
+
+[ext_resource path="res://addons/zylann.hterrain/hterrain.gd" type="Script" id=1]
+[ext_resource path="res://tdata/data.hterrain" type="Resource" id=2]
+[ext_resource path="res://assets/[2K]Ground03/Ground03_col.jpg" type="Texture" id=3]
+[ext_resource path="res://assets/[2K]Ground03/Ground03_nrm.jpg" type="Texture" id=4]
+
+[node name="TestTerrain" type="Spatial"]
+
+[node name="HTerrain" type="Spatial" parent="."]
+transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, -250, -20, -250 )
+script = ExtResource( 1 )
+collision_enabled = true
+ambient_wind = 0.0
+lod_scale = 2.0
+map_scale = Vector3( 1, 1, 1 )
+_terrain_data = ExtResource( 2 )
+chunk_size = 32
+shader_type = "Classic4"
+custom_shader = null
+shader_params/u_ground_uv_scale = 20
+shader_params/u_depth_blending = true
+shader_params/u_triplanar = false
+shader_params/u_globalmap_blend_start = null
+shader_params/u_globalmap_blend_distance = null
+ground/albedo_bump_0 = ExtResource( 3 )
+ground/normal_roughness_0 = ExtResource( 4 )
+ground/albedo_bump_1 = null
+ground/normal_roughness_1 = null
+ground/albedo_bump_2 = null
+ground/normal_roughness_2 = null
+ground/albedo_bump_3 = null
+ground/normal_roughness_3 = null
+
+[node name="DirectionalLight" type="DirectionalLight" parent="HTerrain"]
+transform = Transform( 0.510403, -0.610703, -0.605418, -0.466409, -0.788076, 0.401746, -0.722463, 0.07732, -0.687073, 130, 148, 227 )
+light_energy = 1.73
+shadow_enabled = true

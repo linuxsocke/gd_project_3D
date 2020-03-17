@@ -27,7 +27,8 @@ const MENU_RESIZE = 3
 const MENU_UPDATE_EDITOR_COLLIDER = 4
 const MENU_GENERATE_MESH = 5
 const MENU_EXPORT_HEIGHTMAP = 6
-
+const MENU_PROCEDUAL_TEXTURES = 7 
+const MENU_PROCEDUAL_VEGETATION = 8
 
 # TODO Rename _terrain
 var _node : HTerrain = null
@@ -98,7 +99,7 @@ func _enter_tree():
 	var menu = MenuButton.new()
 	menu.set_text("Terrain")
 	menu.get_popup().add_item("Import maps...", MENU_IMPORT_MAPS)
-	menu.get_popup().add_item("Generate...", MENU_GENERATE)
+	menu.get_popup().add_item("Generate Heigthmap...", MENU_GENERATE)
 	menu.get_popup().add_item("Resize...", MENU_RESIZE)
 	menu.get_popup().add_item("Bake global map", MENU_BAKE_GLOBALMAP)
 	menu.get_popup().add_separator()
@@ -107,6 +108,9 @@ func _enter_tree():
 	menu.get_popup().add_item("Generate mesh (heavy)", MENU_GENERATE_MESH)
 	menu.get_popup().add_separator()
 	menu.get_popup().add_item("Export heightmap", MENU_EXPORT_HEIGHTMAP)
+	menu.get_popup().add_separator()
+	menu.get_popup().add_item("Generate procedual textures", MENU_PROCEDUAL_TEXTURES)
+	menu.get_popup().add_item("Toggle procedual vegetation", MENU_PROCEDUAL_VEGETATION)
 	menu.get_popup().connect("id_pressed", self, "_menu_item_selected")
 	_toolbar.add_child(menu)
 	_menu_button = menu
@@ -507,6 +511,13 @@ func _menu_item_selected(id):
 		MENU_EXPORT_HEIGHTMAP:
 			if _node != null and _node.get_data() != null:
 				_export_image_dialog.popup_centered_minsize()
+		
+		MENU_PROCEDUAL_TEXTURES:
+			if _node != null:
+				_node.generate_procedual()		
+
+		MENU_PROCEDUAL_TEXTURES:
+			print("NYI")
 
 
 func _on_mode_selected(mode):
@@ -583,4 +594,3 @@ func _on_permanent_change_performed(message):
 	ur.add_do_method(data, "_dummy_function")
 	#ur.add_undo_method(data, "_dummy_function")
 	ur.commit_action()
-
