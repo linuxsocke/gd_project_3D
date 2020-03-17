@@ -1,0 +1,164 @@
+[gd_scene load_steps=23 format=2]
+
+[ext_resource path="res://testing/scenes/Ball.tscn" type="PackedScene" id=1]
+[ext_resource path="res://testing/scenes/GoalPiece.tscn" type="PackedScene" id=2]
+[ext_resource path="res://testing/scenes/Player.tscn" type="PackedScene" id=3]
+[ext_resource path="res://testing/scenes/Walls.tscn" type="PackedScene" id=4]
+[ext_resource path="res://testing/scripts/Player.gd" type="Script" id=5]
+[ext_resource path="res://testing/scenes/Box.tscn" type="PackedScene" id=6]
+[ext_resource path="res://testing/scenes/Floor.tscn" type="PackedScene" id=7]
+[ext_resource path="res://testing/scenes/Ramp.tscn" type="PackedScene" id=8]
+[ext_resource path="res://addons/zylann.hterrain/hterrain.gd" type="Script" id=9]
+[ext_resource path="res://testing/scripts/World.gd" type="Script" id=10]
+[ext_resource path="res://testing/scripts/Box.gd" type="Script" id=11]
+[ext_resource path="res://testing/scripts/KinematicBody.gd" type="Script" id=12]
+[ext_resource path="res://assets/textures/[2K]Ground03/Ground03_nrm.jpg" type="Texture" id=13]
+[ext_resource path="res://assets/textures/[2K]Ground03/Ground03_col.jpg" type="Texture" id=14]
+[ext_resource path="res://terrain_data/data.hterrain" type="Resource" id=15]
+[ext_resource path="res://addons/zylann.hterrain/hterrain_detail_layer.gd" type="Script" id=16]
+[ext_resource path="res://assets/textures/[2K]Rocks07/Rocks07_nrm.jpg" type="Texture" id=17]
+[ext_resource path="res://assets/textures/[2K]Rocks07/Rocks07_AO.jpg" type="Texture" id=18]
+[ext_resource path="res://assets/textures/Rock008_4K-JPG/Rock008_4K_Color.jpg" type="Texture" id=19]
+[ext_resource path="res://assets/textures/Rock008_4K-JPG/Rock008_4K_Normal.jpg" type="Texture" id=20]
+
+[sub_resource type="BoxShape" id=1]
+
+[sub_resource type="BoxShape" id=2]
+
+[node name="World" type="Spatial"]
+script = ExtResource( 10 )
+
+[node name="Player" parent="." instance=ExtResource( 3 )]
+script = ExtResource( 5 )
+
+[node name="Head" type="Spatial" parent="Player"]
+transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 0 )
+
+[node name="Camera" type="Camera" parent="Player/Head"]
+transform = Transform( 1, 0, 0, 0, 1, 1.06581e-14, 0, -1.06581e-14, 1, 0, 0, 0 )
+far = 639.1
+
+[node name="Tail" type="RayCast" parent="Player"]
+enabled = true
+
+[node name="CameraBody" type="KinematicBody" parent="."]
+transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -5.96046e-08, 0 )
+script = ExtResource( 12 )
+
+[node name="CameraHead" type="Spatial" parent="CameraBody"]
+
+[node name="FreeCamera" type="Camera" parent="CameraBody/CameraHead"]
+transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5, 0 )
+far = 486.5
+
+[node name="TestPlatform" parent="." instance=ExtResource( 7 )]
+transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, 68, -31.0228, 47 )
+
+[node name="Box" parent="TestPlatform" instance=ExtResource( 6 )]
+transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, -6, 2, 0 )
+script = ExtResource( 11 )
+
+[node name="Ramp" parent="TestPlatform" instance=ExtResource( 8 )]
+transform = Transform( 1, 0, 0, 0, 0.906308, 0.422618, 0, -0.422618, 0.906308, 0, 3, 8 )
+
+[node name="Walls" parent="TestPlatform" instance=ExtResource( 4 )]
+transform = Transform( 0.25, 0, 0, 0, 1, 0, 0, 0, 10, -10, 1, 0 )
+
+[node name="Walls2" parent="TestPlatform" instance=ExtResource( 4 )]
+transform = Transform( -1.09278e-08, 0, -10, 0, 1, 0, 0.25, 0, -4.37114e-07, 0, 1, 10 )
+
+[node name="Walls3" parent="TestPlatform" instance=ExtResource( 4 )]
+transform = Transform( -0.00310155, 0, -9.99923, 0, 1, 0, 0.249981, 0, -0.124062, 0, 1, -10 )
+
+[node name="Walls4" parent="TestPlatform" instance=ExtResource( 4 )]
+transform = Transform( 0.25, 0, 0, 0, 1, 0, 0, 0, 10, 10, 1, 0 )
+
+[node name="Floor2" parent="TestPlatform" instance=ExtResource( 7 )]
+transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, 0.0445023, 3.9652, 26.0845 )
+
+[node name="Area" type="Area" parent="TestPlatform/Floor2"]
+transform = Transform( 1.45, 0, 0, 0, 3.15, 0, 0, 0, 2.85, -11, 1, 0 )
+
+[node name="CollisionShape" type="CollisionShape" parent="TestPlatform/Floor2/Area"]
+shape = SubResource( 1 )
+
+[node name="GoalPiece" parent="TestPlatform/Floor2" instance=ExtResource( 2 )]
+transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, -10.0445, 3.0348, 2.9155 )
+
+[node name="Ball" parent="TestPlatform/Floor2" instance=ExtResource( 1 )]
+transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, -0.0930023, 3.1337, -3.46751 )
+
+[node name="Ladder" parent="TestPlatform" instance=ExtResource( 4 )]
+transform = Transform( 0.021789, 0.996195, 0, -1.67638e-08, 6.0536e-09, 10, 0.249049, -0.0871558, 6.55651e-07, 0, -10, -11 )
+
+[node name="Area" type="Area" parent="TestPlatform/Ladder"]
+transform = Transform( 1.81224, -0.277248, 2.10387e-06, -0.017328, 1.02606, -4.60161e-08, 1.35026e-09, -4.72658e-10, 1.01303, 0, 0, 0 )
+
+[node name="CollisionShape" type="CollisionShape" parent="TestPlatform/Ladder/Area"]
+shape = SubResource( 2 )
+
+[node name="Panel" type="Panel" parent="."]
+margin_left = 456.0
+margin_top = 310.0
+margin_right = 657.0
+margin_bottom = 391.0
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="Label" type="Label" parent="Panel"]
+margin_left = 38.0
+margin_top = 19.0
+margin_right = 157.0
+margin_bottom = 62.0
+text = "You Win!"
+align = 1
+valign = 1
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="HTerrain" type="Spatial" parent="."]
+transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, -250, -141.333, -250 )
+script = ExtResource( 9 )
+collision_enabled = true
+ambient_wind = 0.0
+lod_scale = 2.0
+map_scale = Vector3( 1, 1, 1 )
+_terrain_data = ExtResource( 15 )
+chunk_size = 32
+shader_type = "Classic4"
+custom_shader = null
+shader_params/u_ground_uv_scale = 20
+shader_params/u_depth_blending = true
+shader_params/u_triplanar = true
+shader_params/u_globalmap_blend_start = null
+shader_params/u_globalmap_blend_distance = null
+ground/albedo_bump_0 = ExtResource( 14 )
+ground/normal_roughness_0 = ExtResource( 13 )
+ground/albedo_bump_1 = ExtResource( 19 )
+ground/normal_roughness_1 = ExtResource( 20 )
+ground/albedo_bump_2 = null
+ground/normal_roughness_2 = null
+ground/albedo_bump_3 = ExtResource( 18 )
+ground/normal_roughness_3 = ExtResource( 17 )
+
+[node name="DirectionalLight" type="DirectionalLight" parent="HTerrain"]
+transform = Transform( 1, 0, 0, 0, 4.47035e-08, 1, 0, -1, 4.47035e-08, 250, 500, 250 )
+shadow_enabled = true
+shadow_bias = 0.09
+
+[node name="HTerrainDetailLayer" type="Spatial" parent="HTerrain"]
+script = ExtResource( 16 )
+layer_index = 0
+texture = null
+view_distance = 100.0
+custom_shader = null
+density = 4.0
+shader_params/u_terrain_normal_basis = Basis( 1, 0, 0, 0, 1, 0, 0, 0, 1 )
+shader_params/u_globalmap_tint_bottom = null
+shader_params/u_globalmap_tint_top = null
+shader_params/u_bottom_ao = null
+[connection signal="body_entered" from="TestPlatform/Floor2/Area" to="." method="_on_Area_body_entered"]
+[connection signal="body_shape_entered" from="TestPlatform/Ladder/Area" to="Player" method="_on_Area_body_shape_entered"]
+[connection signal="body_shape_exited" from="TestPlatform/Ladder/Area" to="Player" method="_on_Area_body_shape_exited"]

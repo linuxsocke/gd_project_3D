@@ -537,6 +537,54 @@ func update_collider():
 	_collider.create_from_terrain_data(_data)
 
 
+func generate_procedual():
+	var heightmap = _data.get_image(HTerrainData.CHANNEL_HEIGHT)
+	var normalmap = _data.get_image(HTerrainData.CHANNEL_NORMAL)
+	var splatmap = _data.get_image(HTerrainData.CHANNEL_SPLAT)
+
+	assert(splatmap != null)
+	assert(heightmap != null)
+	assert(normalmap != null)
+
+	normalmap.lock() # also needed when only getting the pixel color
+	splatmap.lock()
+
+	if _shader_type == SHADER_SIMPLE4:
+
+		var cliff_target_color = Color(0, 1, 0, 0)
+		var map_height = normalmap.get_height() 
+		var map_width = normalmap.get_width()
+
+		set_area_dirty(0, 0, map_height, map_width)
+		var map_index = 0 
+
+		for z in map_height:
+			for x in map_width:
+
+				# generate texture amounts  
+				var splat = splatmap.get_pixel(x, z)
+				var normal = normalmap.get_pixel(x, z)
+				var normal_vec = Vector3(normal.r, normal.g, normal.b)
+				var slope = normal_vec.dot(Vector3.UP)
+				print("Slope: ", slope)
+				
+				if (slope > 0.2):
+					splat = splat.linear_interpolate(cliff_target_color, 0.9)
+					splatmap.set_pixel(x, z, splat)
+
+		_data.notify_region_change( \
+			Rect2(0, 0, map_height, map_width), \
+			HTerrainData.CHANNEL_SPLAT, map_index)
+
+	else:
+		printerr("Unknown shader type ", _shader_type)
+
+	splatmap.unlock()
+	#heightmap.unlock()
+	normalmap.unlock()
+	
+
+
 func _on_data_resolution_changed():
 	_reset_ground_chunks()
 
