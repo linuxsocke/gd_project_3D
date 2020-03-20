@@ -15,7 +15,7 @@ func _ready():
 	
 
 
-func _process(delta):
+func _process(_delta):
 	if (Input.is_action_just_pressed("ui_cancel")):
 		Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 		get_tree().quit()
@@ -43,6 +43,10 @@ func _input(event):
 
 func _physics_process(delta):
 	camera_body.move(delta)
+	#### Update HUD
+	$UI/VBox/FPS.text = "FPS: " + String(Engine.get_frames_per_second())
+	var pos = $Player.global_transform.origin
+	$UI/VBox/Position.text = "Position: (%.1f, %.1f, %.1f)" % [pos.x, pos.y, pos.z]
 
 
 func _on_Area_body_entered(body):

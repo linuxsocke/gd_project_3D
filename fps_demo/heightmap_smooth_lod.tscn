@@ -21,6 +21,10 @@ size = Vector2( 2048, 2048 )
 script = ExtResource( 7 )
 
 [node name="UI" parent="." instance=ExtResource( 6 )]
+anchor_left = 0.00683594
+anchor_top = 0.0166667
+anchor_right = 0.00683594
+anchor_bottom = 0.0166667
 
 [node name="WorldEnvironment" parent="." instance=ExtResource( 3 )]
 
@@ -34,7 +38,7 @@ jump_is_jetpack = true
 [node name="VoxelTerrain" type="VoxelLodTerrain" parent="."]
 stream = SubResource( 1 )
 view_distance = 2048
-lod_count = 6
+lod_count = 8
 viewer_path = NodePath("../Player")
 material = ExtResource( 5 )
 

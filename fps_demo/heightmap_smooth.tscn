@@ -5,7 +5,7 @@
 [ext_resource path="res://fps_demo/support/WorldEnvironment.tscn" type="PackedScene" id=3]
 [ext_resource path="res://fps_demo/support/platform.tscn" type="PackedScene" id=4]
 [ext_resource path="res://fps_demo/support/player.tscn" type="PackedScene" id=5]
-[ext_resource path="res://blocky_terrain/noise_distorted.png" type="Image" id=6]
+[ext_resource path="res://assets/heightmaps/noise_distorted.png" type="Image" id=6]
 [ext_resource path="res://fps_demo/materials/grass-rock.material" type="Material" id=7]
 
 [sub_resource type="VoxelGeneratorImage" id=1]
