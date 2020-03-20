@@ -9,7 +9,7 @@ func _ready():
 	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
 
 
-func _physics_process(delta):
+func _physics_process(_delta):
 	#### Update HUD
 	$UI/VBox/FPS.text = "FPS: " + String(Engine.get_frames_per_second())
 	var pos = $Player.global_transform.origin

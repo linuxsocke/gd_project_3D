@@ -14,6 +14,7 @@ const LoadTextureDialog = preload("load_texture_dialog.gd")
 const EditPanel = preload("panel.tscn")
 const ProgressWindow = preload("progress_window.tscn")
 const GeneratorDialog = preload("generator/generator_dialog.tscn")
+const ProceduralGeneratorDialog = preload("generator/procedural_generator_dialog.tscn")
 const ImportDialog = preload("importer/importer_dialog.tscn")
 const GenerateMeshDialog = preload("generate_mesh_dialog.tscn")
 const ResizeDialog = preload("resize_dialog/resize_dialog.tscn")
@@ -27,8 +28,8 @@ const MENU_RESIZE = 3
 const MENU_UPDATE_EDITOR_COLLIDER = 4
 const MENU_GENERATE_MESH = 5
 const MENU_EXPORT_HEIGHTMAP = 6
-const MENU_PROCEDUAL_TEXTURES = 7 
-const MENU_PROCEDUAL_VEGETATION = 8
+const MENU_PROCEDURAL_TEXTURES = 7 
+const MENU_PROCEDURAL_VEGETATION = 8
 
 # TODO Rename _terrain
 var _node : HTerrain = null
@@ -37,6 +38,7 @@ var _panel = null
 var _toolbar = null
 var _toolbar_brush_buttons = {}
 var _generator_dialog = null
+var _procedural_generator_dialog = null
 var _import_dialog = null
 var _export_image_dialog = null
 var _progress_window = null
@@ -99,7 +101,7 @@ func _enter_tree():
 	var menu = MenuButton.new()
 	menu.set_text("Terrain")
 	menu.get_popup().add_item("Import maps...", MENU_IMPORT_MAPS)
-	menu.get_popup().add_item("Generate Heigthmap...", MENU_GENERATE)
+	menu.get_popup().add_item("Generate Heightmap...", MENU_GENERATE)
 	menu.get_popup().add_item("Resize...", MENU_RESIZE)
 	menu.get_popup().add_item("Bake global map", MENU_BAKE_GLOBALMAP)
 	menu.get_popup().add_separator()
@@ -109,8 +111,8 @@ func _enter_tree():
 	menu.get_popup().add_separator()
 	menu.get_popup().add_item("Export heightmap", MENU_EXPORT_HEIGHTMAP)
 	menu.get_popup().add_separator()
-	menu.get_popup().add_item("Generate procedual textures", MENU_PROCEDUAL_TEXTURES)
-	menu.get_popup().add_item("Toggle procedual vegetation", MENU_PROCEDUAL_VEGETATION)
+	menu.get_popup().add_item("Generate procedural textures", MENU_PROCEDURAL_TEXTURES)
+	menu.get_popup().add_item("Toggle procedural vegetation", MENU_PROCEDURAL_VEGETATION)
 	menu.get_popup().connect("id_pressed", self, "_menu_item_selected")
 	_toolbar.add_child(menu)
 	_menu_button = menu
@@ -172,6 +174,11 @@ func _enter_tree():
 	_generator_dialog.connect("permanent_change_performed", self, "_on_permanent_change_performed")
 	base_control.add_child(_generator_dialog)
 
+	_procedural_generator_dialog = ProceduralGeneratorDialog.instance()
+	_procedural_generator_dialog.connect("progress_notified", self, "_terrain_progress_notified")
+	_procedural_generator_dialog.connect("permanent_change_performed", self, "_on_permanent_change_performed")
+	base_control.add_child(_procedural_generator_dialog)
+
 	_import_dialog = ImportDialog.instance()
 	_import_dialog.connect("permanent_change_performed", self, "_on_permanent_change_performed")
 	base_control.add_child(_import_dialog)
@@ -217,6 +224,9 @@ func _exit_tree():
 	_generator_dialog.queue_free()
 	_generator_dialog = null
 	
+	_procedural_generator_dialog.queue_free()
+	_procedural_generator_dialog = null
+
 	_import_dialog.queue_free()
 	_import_dialog = null
 	
@@ -265,6 +275,7 @@ func edit(object):
 	
 	_panel.set_terrain(_node)
 	_generator_dialog.set_terrain(_node)
+	_procedural_generator_dialog.set_terrain(_node)
 	_import_dialog.set_terrain(_node)
 	_brush_decal.set_terrain(_node)
 	_generate_mesh_dialog.set_terrain(_node)
@@ -512,11 +523,12 @@ func _menu_item_selected(id):
 			if _node != null and _node.get_data() != null:
 				_export_image_dialog.popup_centered_minsize()
 		
-		MENU_PROCEDUAL_TEXTURES:
+		MENU_PROCEDURAL_TEXTURES:
 			if _node != null:
-				_node.generate_procedual()		
+				_procedural_generator_dialog.popup_centered_minsize()
+				#_node.generate_procedural()		
 
-		MENU_PROCEDUAL_TEXTURES:
+		MENU_PROCEDURAL_TEXTURES:
 			print("NYI")
 
 

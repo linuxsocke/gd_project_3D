@@ -108,6 +108,11 @@ var _updated_chunks = 0
 var _edit_manual_viewer_pos := Vector3()
 var _normals_baker = null
 
+#var _undo_cache = {}
+
+# Procedural texture generation
+var _random_pattern = []
+
 func _init():
 	print("Create HeightMap")
 
@@ -537,52 +542,104 @@ func update_collider():
 	_collider.create_from_terrain_data(_data)
 
 
-func generate_procedual():
+func generate_procedural():
 	var heightmap = _data.get_image(HTerrainData.CHANNEL_HEIGHT)
 	var normalmap = _data.get_image(HTerrainData.CHANNEL_NORMAL)
 	var splatmap = _data.get_image(HTerrainData.CHANNEL_SPLAT)
+	var colormap = _data.get_image(HTerrainData.CHANNEL_COLOR)
 
 	assert(splatmap != null)
 	assert(heightmap != null)
 	assert(normalmap != null)
+	assert(colormap != null)
 
+	var random_pattern_height = _random_pattern[HTerrainData.CHANNEL_HEIGHT]
+	#var ramdom_pattern_normal = _random_pattern[HTerrainData.CHANNEL_NORMAL]
+
+	assert(random_pattern_height != null)
+	#assert(random_pattern_normal != null)
+
+	#heightmap.lock()
 	normalmap.lock() # also needed when only getting the pixel color
 	splatmap.lock()
 
-	if _shader_type == SHADER_SIMPLE4:
+	random_pattern_height.lock()
+	#random_pattern_normal.lock()
 
-		var cliff_target_color = Color(0, 1, 0, 0)
-		var map_height = normalmap.get_height() 
-		var map_width = normalmap.get_width()
+	var map_height = normalmap.get_height() 
+	var map_width = normalmap.get_width()
 
-		set_area_dirty(0, 0, map_height, map_width)
-		var map_index = 0 
+	set_area_dirty(0, 0, map_height, map_width)
+	var map_index = 0 
 
-		for z in map_height:
-			for x in map_width:
+	var target_color_cliff = Color(0, 0, 0, 1)
+	var target_color_2 = Color(0, 0, 1, 0)
+	var target_color_1 = Color(0, 1, 0, 0)
 
-				# generate texture amounts  
-				var splat = splatmap.get_pixel(x, z)
-				var normal = normalmap.get_pixel(x, z)
-				var normal_vec = Vector3(normal.r, normal.g, normal.b)
-				var slope = normal_vec.dot(Vector3.UP)
-				print("Slope: ", slope)
-				
-				if (slope > 0.2):
-					splat = splat.linear_interpolate(cliff_target_color, 0.9)
-					splatmap.set_pixel(x, z, splat)
-
-		_data.notify_region_change( \
-			Rect2(0, 0, map_height, map_width), \
-			HTerrainData.CHANNEL_SPLAT, map_index)
-
-	else:
-		printerr("Unknown shader type ", _shader_type)
-
-	splatmap.unlock()
-	#heightmap.unlock()
-	normalmap.unlock()
+	# for scaling the random patterns. Too costly!
+	var initial_height = random_pattern_height.get_pixel(0 ,0)
+	var min_height = initial_height.r
+	var max_height = initial_height.r
 	
+	for z in map_height:
+		for x in map_width:
+			var hgt_col = random_pattern_height.get_pixel(x, z)
+			var height = hgt_col.r 
+			if height < min_height:
+				min_height = height
+			if height > max_height:
+				max_height = height
+	
+	var pattern_scale = max_height - min_height
+
+	# color each pixel now
+	for z in map_height:
+		#var p = rand_range(0, 1)
+		for x in map_width:
+
+			# generate texture amounts  
+			#var splat = splatmap.get_pixel(x, z)
+			var normal = normalmap.get_pixel(x, z)
+			var normal_vec = Vector3(2 * normal.r - 1, 2 * normal.b - 1, 2 * normal.g - 1)
+			var slope = 1 - normal_vec.dot(Vector3.UP)
+
+			var hgt_col = random_pattern_height.get_pixel(x, z)
+			var hgt = (hgt_col.r - min_height) / pattern_scale - 0.5  
+			#print("Random_pattern :", rand_hgt)
+			# adjust the slope value 
+			#slope -= 0.1 * slope 
+			#print("Slope: ", slope)
+
+			#print(cliff_amount)
+
+			var splat = Color(1, 0, 0, 0)
+			if (hgt > 0):
+				var rand_hgt = 0.37 * hgt 
+				var cliff_amount = clamp(slope + rand_hgt, 0, 1)  
+				splat = splat.linear_interpolate(target_color_1, cliff_amount)
+			else: 
+				var rand_hgt = 0.4 * hgt 
+				var cliff_amount = clamp( 0.87 * slope - rand_hgt, 0, 1)  
+				splat = splat.linear_interpolate(target_color_2, cliff_amount)
+			#print(splat)
+			splatmap.set_pixel(x, z, splat)
+
+	# notify the region for the corresponding channel
+	_data.notify_region_change( \
+		Rect2(0, 0, map_height, map_width), \
+		HTerrainData.CHANNEL_SPLAT, map_index)
+
+	#heightmap.unlock()
+	splatmap.unlock()
+	normalmap.unlock()
+
+	random_pattern_height.unlock()
+	#random_pattern_normal.unlock()
+	#random_pattern_height.clear()
+
+
+func get_random_pattern():
+	return _random_pattern
 
 
 func _on_data_resolution_changed():

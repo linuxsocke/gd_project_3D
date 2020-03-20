@@ -5,7 +5,7 @@ extends "WorldCommon.gd"
 const MyStream = preload("MyStream.gd")
 
 const MATERIAL = preload("res://fps_demo/materials/color_grid.material")
-const HEIGHT_MAP = preload("res://blocky_terrain/noise_distorted.png")
+const HEIGHT_MAP = preload("res://assets/heightmaps/noise_distorted.png")
 
 var terrain
 
