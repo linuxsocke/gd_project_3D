@@ -111,7 +111,7 @@ var _normals_baker = null
 #var _undo_cache = {}
 
 # Procedural texture generation
-var _random_pattern = []
+var _random_pattern = []  # TODO: should be rather local 
 
 func _init():
 	print("Create HeightMap")
@@ -628,7 +628,7 @@ func generate_procedural():
 	_data.notify_region_change( \
 		Rect2(0, 0, map_height, map_width), \
 		HTerrainData.CHANNEL_SPLAT, map_index)
-
+	
 	#heightmap.unlock()
 	splatmap.unlock()
 	normalmap.unlock()
@@ -636,6 +636,7 @@ func generate_procedural():
 	random_pattern_height.unlock()
 	#random_pattern_normal.unlock()
 	#random_pattern_height.clear()
+	print("Done")
 
 
 func get_random_pattern():
