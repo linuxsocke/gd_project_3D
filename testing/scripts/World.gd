@@ -11,6 +11,7 @@ func _ready():
 	
 	# Set default camera
 	$CameraBody/CameraHead/FreeCamera.current = true  # may set by user
+	#$Player/Head/Camera.current = true
 	camera_body = $CameraBody
 	
 

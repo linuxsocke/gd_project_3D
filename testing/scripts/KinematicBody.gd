@@ -4,7 +4,7 @@ var camera_angle = 0
 var mouse_sensitivity = 0.3
 
 # flying camera variables
-const FLY_SPEED = 40
+const FLY_SPEED = 80
 const FLY_ACCEL = 4
 var direction = Vector3()
 var velocity = Vector3()

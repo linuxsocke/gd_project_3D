@@ -94,6 +94,10 @@ func get_flatten_height():
 	return _flatten_height
 
 
+func set_texture_mode(shader_type):
+	_texture_mode = shader_type
+
+
 func set_texture_index(tid):
 	assert(tid >= 0)
 	var slot_count = HTerrain.get_ground_texture_slot_count_for_shader(_texture_mode)
@@ -269,9 +273,10 @@ func paint(height_map, cell_pos_x, cell_pos_y, override_mode):
 			_paint_detail(data, origin_x, origin_y)
 			map_index = _detail_index
 
-	data.notify_region_change( \
-		Rect2(origin_x, origin_y, _shape_size, _shape_size), \
-		_get_mode_channel(mode), map_index)
+	if (mode != MODE_SPLAT):
+		data.notify_region_change( \
+			Rect2(origin_x, origin_y, _shape_size, _shape_size), \
+			_get_mode_channel(mode), map_index)
 
 	#var time_elapsed = OS.get_ticks_msec() - time_before
 	#print("Time elapsed painting: ", time_elapsed, "ms")
@@ -458,70 +463,97 @@ func _flatten(data, origin_x, origin_y):
 
 
 func _paint_splat(data, origin_x, origin_y):
+	for splat_index in _splat_count_for_shader():
+		var im = data.get_image(HTerrainData.CHANNEL_SPLAT, splat_index)
+		assert(im != null)
 
-	var im = data.get_image(HTerrainData.CHANNEL_SPLAT)
-	assert(im != null)
+		var shape_size = _shape_size
 
-	var shape_size = _shape_size
+		_backup_for_undo(im, _undo_cache, origin_x, origin_y, shape_size, shape_size)
 
-	_backup_for_undo(im, _undo_cache, origin_x, origin_y, shape_size, shape_size)
+		var min_x = origin_x
+		var min_y = origin_y
+		var max_x = min_x + shape_size
+		var max_y = min_y + shape_size
+		var min_noclamp_x = min_x
+		var min_noclamp_y = min_y
 
-	var min_x = origin_x
-	var min_y = origin_y
-	var max_x = min_x + shape_size
-	var max_y = min_y + shape_size
-	var min_noclamp_x = min_x
-	var min_noclamp_y = min_y
+		min_x = Util.clamp_int(min_x, 0, data.get_resolution())
+		min_y = Util.clamp_int(min_y, 0, data.get_resolution())
+		max_x = Util.clamp_int(max_x, 0, data.get_resolution())
+		max_y = Util.clamp_int(max_y, 0, data.get_resolution())
 
-	min_x = Util.clamp_int(min_x, 0, data.get_resolution())
-	min_y = Util.clamp_int(min_y, 0, data.get_resolution())
-	max_x = Util.clamp_int(max_x, 0, data.get_resolution())
-	max_y = Util.clamp_int(max_y, 0, data.get_resolution())
+		im.lock()
 
-	im.lock()
+		if _texture_mode == HTerrain.SHADER_SIMPLE4:
 
-	if _texture_mode == HTerrain.SHADER_SIMPLE4:
+			var target_color = Color(0, 0, 0, 0)
+			target_color[_texture_index] = 1.0
+#			if (4 * splat_index <= _texture_index \
+#			and _texture_index < 4 * (splat_index + 1)):
+#				target_color[_texture_index % 4] = 1.0
 
-		var target_color = Color(0, 0, 0, 0)
-		target_color[_texture_index] = 1.0
+			_shape.lock()
 
-		_shape.lock()
+			for y in range(min_y, max_y):
+				var py = y - min_noclamp_y
 
-		for y in range(min_y, max_y):
-			var py = y - min_noclamp_y
+				for x in range(min_x, max_x):
+					var px = x - min_noclamp_x
 
-			for x in range(min_x, max_x):
-				var px = x - min_noclamp_x
+					var shape_value = _shape.get_pixel(px, py).r
 
-				var shape_value = _shape.get_pixel(px, py).r
+					var c = im.get_pixel(x, y)
+					c = c.linear_interpolate(target_color, shape_value * _opacity)
+					im.set_pixel(x, y, c)
 
-				var c = im.get_pixel(x, y)
-				c = c.linear_interpolate(target_color, shape_value * _opacity)
-				im.set_pixel(x, y, c)
+			_shape.unlock()
+		elif _texture_mode == HTerrain.SHADER_CUSTOM:
+			var target_color = Color(0, 0, 0, 0)
+			if (4 * splat_index <= _texture_index \
+			and _texture_index < 4 * (splat_index + 1)):
+				target_color[_texture_index % 4] = 1.0
 
-		_shape.unlock()
+			_shape.lock()
 
-#	elif _texture_mode == HTerrain.SHADER_ARRAY:
-#		var shape_threshold = 0.1
-#
-#		for y in range(min_y, max_y):
-#			var py = y - min_noclamp_y
-#
-#			for x in range(min_x, max_x):
-#				var px = x - min_noclamp_x
-#
-#				var shape_value = _shape[py][px]
-#
-#				if shape_value > shape_threshold:
-#					# TODO Improve weight blending, it looks meh
-#					var c = Color()
-#					c.r = float(_texture_index) / 256.0
-#					c.g = clamp(_opacity, 0.0, 1.0)
-#					im.set_pixel(x, y, c)
-	else:
-		printerr("Unknown texture mode ", _texture_mode)
+			for y in range(min_y, max_y):
+				var py = y - min_noclamp_y
 
-	im.unlock()
+				for x in range(min_x, max_x):
+					var px = x - min_noclamp_x
+
+					var shape_value = _shape.get_pixel(px, py).r
+
+					var c = im.get_pixel(x, y)
+					c = c.linear_interpolate(target_color, shape_value * _opacity)
+					im.set_pixel(x, y, c)
+
+			_shape.unlock()
+
+	#	elif _texture_mode == HTerrain.SHADER_ARRAY:
+	#		var shape_threshold = 0.1
+	#
+	#		for y in range(min_y, max_y):
+	#			var py = y - min_noclamp_y
+	#
+	#			for x in range(min_x, max_x):
+	#				var px = x - min_noclamp_x
+	#
+	#				var shape_value = _shape[py][px]
+	#
+	#				if shape_value > shape_threshold:
+	#					# TODO Improve weight blending, it looks meh
+	#					var c = Color()
+	#					c.r = float(_texture_index) / 256.0
+	#					c.g = clamp(_opacity, 0.0, 1.0)
+	#					im.set_pixel(x, y, c)
+		else:
+			printerr("Unknown texture mode ", _texture_mode)
+
+		im.unlock()
+		data.notify_region_change( \
+			Rect2(origin_x, origin_y, _shape_size, _shape_size), \
+			_get_mode_channel(MODE_SPLAT), splat_index)
 
 
 func _paint_color(data, origin_x, origin_y):
@@ -646,3 +678,10 @@ func _edit_pop_undo_redo_data(heightmap_data):
 	_undo_cache.clear()
 
 	return data
+
+
+func _splat_count_for_shader():
+	if _texture_mode == HTerrain.SHADER_CUSTOM:
+		return int(HTerrain.SHADER_CUSTOM_SLOT_COUNT / 4) 
+	else: 
+		return 1

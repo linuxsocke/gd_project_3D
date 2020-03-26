@@ -264,12 +264,16 @@ func edit(object):
 	if _node != null:
 		_node.disconnect("tree_exited", self, "_terrain_exited_scene")
 		_node.disconnect("progress_notified", self, "_terrain_progress_notified")
+		_node.disconnect("shader_type_changed", self, "_on_shader_type_changed")
 	
 	_node = node
 	
 	if _node != null:
 		_node.connect("tree_exited", self, "_terrain_exited_scene")
 		_node.connect("progress_notified", self, "_terrain_progress_notified")
+		_node.connect("shader_type_changed", self, "_on_shader_type_changed")
+		_node.on_custom_shader_usage()
+		_brush.set_texture_mode(_node.get_shader_type())
 	
 	_update_brush_buttons_availability()
 	
@@ -281,6 +285,7 @@ func edit(object):
 	_generate_mesh_dialog.set_terrain(_node)
 	_resize_dialog.set_terrain(_node)
 	_export_image_dialog.set_terrain(_node)
+
 	
 	if object is HTerrainDetailLayer:
 		# Auto-select layer for painting
@@ -577,6 +582,11 @@ func _terrain_progress_notified(info):
 		_progress_window.show_progress(info.message, info.progress)
 		# TODO Have builtin modal progress bar
 		# https://github.com/godotengine/godot/issues/17763
+
+
+func _on_shader_type_changed(shader_type):
+	_brush.set_texture_mode(shader_type)
+	_panel.set_texture_list()
 
 
 func _on_GenerateMeshDialog_generate_selected(lod):

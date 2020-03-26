@@ -92,3 +92,13 @@ func _on_EditDialog_albedo_changed(slot, texture):
 func _on_TexturesContainer_item_activated(index):
 	_edit_dialog.set_slot(index)
 	_edit_dialog.popup_centered()
+
+
+func set_texture_list():
+
+	_textures_list.clear()
+	if _terrain != null:
+		var slot_count = _terrain.get_ground_texture_slot_count()
+		for i in range(slot_count):
+			var tex = _terrain.get_ground_texture(i, HTerrain.GROUND_ALBEDO_BUMP)
+			_textures_list.add_item(_get_slot_hint_name(i), tex if tex != null else _empty_icon)
