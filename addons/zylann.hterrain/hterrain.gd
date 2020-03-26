@@ -30,6 +30,7 @@ const _api_shader_params = {
 	"u_terrain_normalmap": true,
 	"u_terrain_colormap": true,
 	"u_terrain_splatmap": true,
+	"u_terrain_splatmap_1": true,
 	"u_terrain_globalmap": true,
 
 	"u_terrain_inverse_transform": true,
@@ -39,16 +40,26 @@ const _api_shader_params = {
 	"u_ground_albedo_bump_1": true,
 	"u_ground_albedo_bump_2": true,
 	"u_ground_albedo_bump_3": true,
+	"u_ground_albedo_bump_4": true,
+	"u_ground_albedo_bump_5": true,
+	"u_ground_albedo_bump_6": true,
+	"u_ground_albedo_bump_7": true,
 
 	"u_ground_normal_roughness_0": true,
 	"u_ground_normal_roughness_1": true,
 	"u_ground_normal_roughness_2": true,
-	"u_ground_normal_roughness_3": true
+	"u_ground_normal_roughness_3": true,
+	"u_ground_normal_roughness_4": true,
+	"u_ground_normal_roughness_5": true,
+	"u_ground_normal_roughness_6": true,
+	"u_ground_normal_roughness_7": true
 }
 
 const SHADER_SIMPLE4 = "Classic4"
 const SHADER_SIMPLE4_LITE = "Classic4Lite"
 const SHADER_CUSTOM = "Custom"
+
+const SHADER_CUSTOM_SLOT_COUNT = 8
 
 # Note: the alpha channel is used to pack additional maps
 const GROUND_ALBEDO_BUMP = 0
@@ -69,6 +80,7 @@ signal progress_notified(info)
 # Same as progress_notified once finished, but more convenient to yield
 signal progress_complete
 signal transform_changed(global_transform)
+signal shader_type_changed(shader_type)
 
 export var collision_enabled = true setget set_collision_enabled
 export(float, 0.0, 1.0) var ambient_wind = 0.0 setget set_ambient_wind
@@ -258,7 +270,8 @@ func _set(key, value):
 			var type_name = _ground_enum_to_name[ground_texture_type]
 			if key.begins_with(str("ground/", type_name, "_")):
 				var i = key.right(len(key) - 1).to_int()
-				set_ground_texture(i, ground_texture_type, value)
+				if i < get_ground_texture_slot_count():
+					set_ground_texture(i, ground_texture_type, value)
 
 	elif key == "shader_type":
 		set_shader_type(value)
@@ -546,6 +559,7 @@ func generate_procedural():
 	var heightmap = _data.get_image(HTerrainData.CHANNEL_HEIGHT)
 	var normalmap = _data.get_image(HTerrainData.CHANNEL_NORMAL)
 	var splatmap = _data.get_image(HTerrainData.CHANNEL_SPLAT)
+	var splatmap_1 = _data.get_image(HTerrainData.CHANNEL_SPLAT, 1)
 	var colormap = _data.get_image(HTerrainData.CHANNEL_COLOR)
 
 	assert(splatmap != null)
@@ -562,6 +576,7 @@ func generate_procedural():
 	#heightmap.lock()
 	normalmap.lock() # also needed when only getting the pixel color
 	splatmap.lock()
+	splatmap_1.lock()
 
 	random_pattern_height.lock()
 	#random_pattern_normal.lock()
@@ -572,9 +587,12 @@ func generate_procedural():
 	set_area_dirty(0, 0, map_height, map_width)
 	var map_index = 0 
 
+
+	var target_color_0     = Color(1, 0, 0, 0)
+	var target_color_1     = Color(0, 1, 0, 0)
+	var target_color_2     = Color(0, 0, 1, 0)
 	var target_color_cliff = Color(0, 0, 0, 1)
-	var target_color_2 = Color(0, 0, 1, 0)
-	var target_color_1 = Color(0, 1, 0, 0)
+	var target_color = Color(0, 0, 0, 0)
 
 	# for scaling the random patterns. Too costly!
 	var initial_height = random_pattern_height.get_pixel(0 ,0)
@@ -594,48 +612,63 @@ func generate_procedural():
 
 	# color each pixel now
 	for z in map_height:
-		#var p = rand_range(0, 1)
 		for x in map_width:
 
 			# generate texture amounts  
 			#var splat = splatmap.get_pixel(x, z)
 			var normal = normalmap.get_pixel(x, z)
 			var normal_vec = Vector3(2 * normal.r - 1, 2 * normal.b - 1, 2 * normal.g - 1)
-			var slope = 1 - normal_vec.dot(Vector3.UP)
+			var dot_prdct = normal_vec.dot(Vector3.UP)
+			var slope = 1 - dot_prdct
 
 			var hgt_col = random_pattern_height.get_pixel(x, z)
-			var hgt = (hgt_col.r - min_height) / pattern_scale - 0.5  
-			#print("Random_pattern :", rand_hgt)
-			# adjust the slope value 
-			#slope -= 0.1 * slope 
-			#print("Slope: ", slope)
+			var p = rand_range(-0.11, 0.11)
+			var hgt = (hgt_col.r - min_height) / pattern_scale - 0.5  + p
 
-			#print(cliff_amount)
+			# first everything with cliff (sand is naturally ontop of cliffs)
+			var splat = target_color_cliff
 
-			var splat = Color(1, 0, 0, 0)
+			# add sand
+			#if (dot_prdct + 0.12 * hgt > 0.75):
+			var sand_amount = clamp(dot_prdct - 0.21 + 0.25 * hgt, 0, 1)
+			splat = splat.linear_interpolate(target_color_0, sand_amount)
+
+			# add a mixture of stones to cliffs
+			#if (slope + 0.12 * hgt > 0.6):
 			if (hgt > 0):
-				var rand_hgt = 0.37 * hgt 
-				var cliff_amount = clamp(slope + rand_hgt, 0, 1)  
+				var rand_hgt = 0.35 * hgt 
+				var cliff_amount = clamp(slope + 0.18 + rand_hgt, 0, 1)  
 				splat = splat.linear_interpolate(target_color_1, cliff_amount)
 			else: 
-				var rand_hgt = 0.4 * hgt 
-				var cliff_amount = clamp( 0.87 * slope - rand_hgt, 0, 1)  
-				splat = splat.linear_interpolate(target_color_2, cliff_amount)
+				var rand_hgt = 0.6 * (hgt - 0.25) 
+				var cliff_amount = 0
+				if (rand_hgt > 0):
+					cliff_amount = clamp(slope + 0.18 + rand_hgt, 0, 1)  
+					splat = splat.linear_interpolate(target_color_cliff, cliff_amount)
+				else: 
+					cliff_amount = clamp(slope + 0.18 - rand_hgt, 0, 1)  
+					splat = splat.linear_interpolate(target_color_2, cliff_amount)
 			#print(splat)
 			splatmap.set_pixel(x, z, splat)
-
-	# notify the region for the corresponding channel
-	_data.notify_region_change( \
-		Rect2(0, 0, map_height, map_width), \
-		HTerrainData.CHANNEL_SPLAT, map_index)
+			splatmap_1.set_pixel(x, z, target_color)
 	
 	#heightmap.unlock()
 	splatmap.unlock()
+	splatmap_1.unlock()
 	normalmap.unlock()
 
 	random_pattern_height.unlock()
 	#random_pattern_normal.unlock()
 	#random_pattern_height.clear()
+	_random_pattern.clear()
+
+	# notify the region for the corresponding channel
+	_data.notify_region_change( \
+		Rect2(0, 0, map_height, map_width), \
+		HTerrainData.CHANNEL_SPLAT, map_index)
+	_data.notify_region_change( \
+		Rect2(0, 0, map_height, map_width), \
+		HTerrainData.CHANNEL_SPLAT, 1)
 	print("Done")
 
 
@@ -729,11 +762,14 @@ func set_shader_type(type: String):
 			_material.shader = load(CLASSIC4_LITE_SHADER_PATH)
 		SHADER_CUSTOM:
 			_material.shader = _custom_shader
+			on_custom_shader_usage()
 		_:
 			printerr("Unknown shader type: '", _shader_type, "'")
 			_material.shader = load(CLASSIC4_SHADER_PATH)
 
 	_material_params_need_update = true
+
+	emit_signal("shader_type_changed", type) 
 	
 	if Engine.editor_hint:
 		property_list_changed_notify()
@@ -797,11 +833,15 @@ func _update_material_params():
 		height_texture = _data.get_texture(HTerrainData.CHANNEL_HEIGHT)
 		normal_texture = _data.get_texture(HTerrainData.CHANNEL_NORMAL)
 		color_texture = _data.get_texture(HTerrainData.CHANNEL_COLOR)
-		splat_texture = _data.get_texture(HTerrainData.CHANNEL_SPLAT)
 		if _data.get_map_count(HTerrainData.CHANNEL_GLOBAL_ALBEDO) != 0:
 			global_texture = _data.get_texture(HTerrainData.CHANNEL_GLOBAL_ALBEDO)
 		res.x = _data.get_resolution()
 		res.y = res.x
+	for splat_index in _splat_count_for_shader():  # check whether this is used often
+		if has_data():
+			splat_texture = _data.get_texture(HTerrainData.CHANNEL_SPLAT, splat_index)
+		var splat_param = str(SHADER_PARAM_SPLAT_TEXTURE, "_", splat_index) if splat_index != 0 else SHADER_PARAM_SPLAT_TEXTURE
+		_material.set_shader_param(splat_param, splat_texture)
 
 	# Set all parameters from the terrain sytem.
 
@@ -817,7 +857,6 @@ func _update_material_params():
 	_material.set_shader_param(SHADER_PARAM_HEIGHT_TEXTURE, height_texture)
 	_material.set_shader_param(SHADER_PARAM_NORMAL_TEXTURE, normal_texture)
 	_material.set_shader_param(SHADER_PARAM_COLOR_TEXTURE, color_texture)
-	_material.set_shader_param(SHADER_PARAM_SPLAT_TEXTURE, splat_texture)
 	_material.set_shader_param("u_terrain_globalmap", global_texture)
 
 	for slot in len(_ground_textures):
@@ -835,9 +874,13 @@ func setup_globalmap_material(mat: ShaderMaterial):
 
 	if has_data():
 		color_texture = _data.get_texture(HTerrainData.CHANNEL_COLOR)
-		splat_texture = _data.get_texture(HTerrainData.CHANNEL_SPLAT)
+		
+	for splat_index in _splat_count_for_shader():  # check whether this is used often
+		if has_data():
+			splat_texture = _data.get_texture(HTerrainData.CHANNEL_SPLAT, splat_index)
+		var splat_param = str(SHADER_PARAM_SPLAT_TEXTURE, "_", splat_index) if splat_index != 0 else SHADER_PARAM_SPLAT_TEXTURE
+		_material.set_shader_param(splat_param, splat_texture)
 
-	mat.set_shader_param("u_terrain_splatmap", splat_texture)
 	mat.set_shader_param("u_terrain_colormap", color_texture)
 	mat.set_shader_param("u_depth_blending", get_shader_param("u_depth_blending"))
 	mat.set_shader_param("u_ground_uv_scale", get_shader_param("u_ground_uv_scale"))
@@ -1213,7 +1256,9 @@ func get_ground_texture(slot: int, type: int) -> Texture:
 func set_ground_texture(slot: int, type: int, tex: Texture):
 	_check_slot(slot)
 	assert(tex == null or tex is Texture)
+	#print("Slot = ", slot)
 	var shader_param = get_ground_texture_shader_param(type, slot)
+	#print("param = ", shader_param)
 	_material.set_shader_param(shader_param, tex)
 	_ground_textures[slot][type] = tex
 
@@ -1269,7 +1314,7 @@ static func get_ground_texture_slot_count_for_shader(shader_type: String):
 		SHADER_SIMPLE4_LITE:
 			return 4
 		SHADER_CUSTOM:
-			return 4
+			return SHADER_CUSTOM_SLOT_COUNT
 #		SHADER_ARRAY:
 #			return 256
 	printerr("Invalid shader type specified ", shader_type)
@@ -1293,6 +1338,36 @@ func _get_configuration_warning():
 		return "The terrain is missing data.\n" \
 			+ "Select the `Data Directory` property in the inspector to assign it."
 	return ""
+
+
+func _splat_count_for_shader():
+	if _shader_type == SHADER_CUSTOM:
+		return int(SHADER_CUSTOM_SLOT_COUNT / 4) 
+	else: 
+		return 1
+
+
+func on_custom_shader_usage():
+	print("Shader changed to: ",_shader_type)
+	# might be used for other maps 
+	if _shader_type == SHADER_CUSTOM:
+		var splatmap_count = int(SHADER_CUSTOM_SLOT_COUNT / 4)
+		if splatmap_count > _data.get_map_count(HTerrainData.CHANNEL_SPLAT):
+			print("Adding maps.")
+			for index in (splatmap_count - _data.get_map_count(HTerrainData.CHANNEL_SPLAT)):
+				_data.edit_add_map(HTerrainData.CHANNEL_SPLAT)
+		assert(_data.get_map_count(HTerrainData.CHANNEL_SPLAT) == splatmap_count)
+
+		if len(_ground_textures) != SHADER_CUSTOM_SLOT_COUNT:
+			_ground_textures.resize(get_ground_texture_slot_count())
+			for slot in len(_ground_textures):
+				var e = []
+				e.resize(GROUND_TEXTURE_TYPE_COUNT)
+				for type in range(GROUND_TEXTURE_TYPE_COUNT):
+					var tex = get_ground_texture(slot, type)
+					e[type] = tex 
+
+				_ground_textures[slot] = e
 
 
 class PendingChunkUpdate:
