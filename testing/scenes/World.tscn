@@ -1,4 +1,4 @@
-[gd_scene load_steps=30 format=2]
+[gd_scene load_steps=33 format=2]
 
 [ext_resource path="res://testing/scenes/Ball.tscn" type="PackedScene" id=1]
 [ext_resource path="res://testing/scenes/GoalPiece.tscn" type="PackedScene" id=2]
@@ -12,21 +12,24 @@
 [ext_resource path="res://testing/scripts/World.gd" type="Script" id=10]
 [ext_resource path="res://testing/scripts/Box.gd" type="Script" id=11]
 [ext_resource path="res://testing/scripts/KinematicBody.gd" type="Script" id=12]
-[ext_resource path="res://assets/textures/rock_07/rock07_normal.png" type="Texture" id=13]
-[ext_resource path="res://assets/textures/rock11/rock11_alternativ.png" type="Texture" id=14]
+[ext_resource path="res://assets/textures/rocks_07/rock07_normal.png" type="Texture" id=13]
+[ext_resource path="res://assets/textures/rocks_11/rocks_11_bump.png" type="Texture" id=14]
 [ext_resource path="res://terrain_data/data.hterrain" type="Resource" id=15]
-[ext_resource path="res://addons/zylann.hterrain/hterrain_detail_layer.gd" type="Script" id=16]
-[ext_resource path="res://assets/textures/rock11/rock11_normal.png" type="Texture" id=17]
-[ext_resource path="res://assets/textures/rock_07/rock07_bumb_atlernativ.png" type="Texture" id=18]
-[ext_resource path="res://assets/textures/ground_09/ground_earth_normal.png" type="Texture" id=19]
-[ext_resource path="res://assets/textures/rock24/rock24_normal.png" type="Texture" id=20]
+[ext_resource path="res://assets/textures/rocks_11/rocks_11_normal.png" type="Texture" id=17]
+[ext_resource path="res://assets/textures/rocks_07/rock07_bumb_atlernativ.png" type="Texture" id=18]
+[ext_resource path="res://assets/textures/ground_37/ground_37_bump_ao_dark.png" type="Texture" id=19]
 [ext_resource path="res://fps_demo/support/UI.tscn" type="PackedScene" id=21]
 [ext_resource path="res://testing/scenes/WorldEnvironment.tscn" type="PackedScene" id=22]
-[ext_resource path="res://assets/textures/rock24/Rock024_4K_Color.jpg" type="Texture" id=23]
-[ext_resource path="res://assets/textures/ground_09/ground09_alternativ.png" type="Texture" id=24]
+[ext_resource path="res://assets/textures/ground_03/ground_03_normal.png" type="Texture" id=24]
 [ext_resource path="res://addons/zylann.hterrain/shaders/custom.shader" type="Shader" id=25]
-[ext_resource path="res://assets/textures/ground03/ground03_normal.png" type="Texture" id=26]
-[ext_resource path="res://assets/textures/ground03/ground03_bumb.png" type="Texture" id=27]
+[ext_resource path="res://assets/textures/ground_09/ground_09_normal.png" type="Texture" id=26]
+[ext_resource path="res://assets/textures/rocks_16/rocks_16_bump_light.png" type="Texture" id=27]
+[ext_resource path="res://assets/textures/leaves/leaves_nornal.png" type="Texture" id=28]
+[ext_resource path="res://assets/textures/rocks_16/rocks_16_normal.png" type="Texture" id=30]
+[ext_resource path="res://assets/textures/leaves/leaves_bump.png" type="Texture" id=31]
+[ext_resource path="res://assets/textures/ground_03/ground_03_bump_dark.png" type="Texture" id=32]
+[ext_resource path="res://assets/textures/ground_09/ground_09_bump_ao.png" type="Texture" id=33]
+[ext_resource path="res://assets/textures/ground_37/ground_37_normal.png" type="Texture" id=35]
 
 [sub_resource type="BoxShape" id=1]
 
@@ -36,9 +39,9 @@
 script = ExtResource( 10 )
 
 [node name="HTerrain" type="Spatial" parent="."]
-transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, -250, -418.333, -250 )
+transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, -678, -193.333, -962 )
 script = ExtResource( 9 )
-collision_enabled = false
+collision_enabled = true
 ambient_wind = 0.0
 lod_scale = 2.0
 map_scale = Vector3( 1, 1, 1 )
@@ -49,38 +52,27 @@ custom_shader = ExtResource( 25 )
 shader_params/u_ground_uv_scale = 20
 shader_params/u_depth_blending = true
 shader_params/u_triplanar = false
-shader_params/u_globalmap_blend_start = null
-shader_params/u_globalmap_blend_distance = null
-ground/albedo_bump_0 = ExtResource( 24 )
-ground/normal_roughness_0 = ExtResource( 19 )
-ground/albedo_bump_1 = ExtResource( 14 )
-ground/normal_roughness_1 = ExtResource( 17 )
+shader_params/u_globalmap_blend_start = 1000.0
+shader_params/u_globalmap_blend_distance = 0.0
+ground/albedo_bump_0 = ExtResource( 33 )
+ground/normal_roughness_0 = ExtResource( 26 )
+ground/albedo_bump_1 = ExtResource( 27 )
+ground/normal_roughness_1 = ExtResource( 30 )
 ground/albedo_bump_2 = ExtResource( 18 )
 ground/normal_roughness_2 = ExtResource( 13 )
-ground/albedo_bump_3 = ExtResource( 23 )
-ground/normal_roughness_3 = ExtResource( 20 )
-ground/albedo_bump_4 = null
-ground/normal_roughness_4 = null
-ground/albedo_bump_5 = ExtResource( 27 )
-ground/normal_roughness_5 = ExtResource( 26 )
-ground/albedo_bump_6 = null
-ground/normal_roughness_6 = null
-ground/albedo_bump_7 = null
-ground/normal_roughness_7 = null
-
-[node name="HTerrainDetailLayer" type="Spatial" parent="HTerrain"]
-script = ExtResource( 16 )
-layer_index = 0
-texture = null
-view_distance = 100.0
-custom_shader = null
-density = 4.0
-shader_params/u_terrain_normal_basis = Basis( 1, 0, 0, 0, 1, 0, 0, 0, 1 )
-shader_params/u_globalmap_tint_bottom = null
-shader_params/u_globalmap_tint_top = null
-shader_params/u_bottom_ao = null
+ground/albedo_bump_3 = ExtResource( 14 )
+ground/normal_roughness_3 = ExtResource( 17 )
+ground/albedo_bump_4 = ExtResource( 27 )
+ground/normal_roughness_4 = ExtResource( 30 )
+ground/albedo_bump_5 = ExtResource( 32 )
+ground/normal_roughness_5 = ExtResource( 24 )
+ground/albedo_bump_6 = ExtResource( 19 )
+ground/normal_roughness_6 = ExtResource( 35 )
+ground/albedo_bump_7 = ExtResource( 31 )
+ground/normal_roughness_7 = ExtResource( 28 )
 
 [node name="Player" parent="." instance=ExtResource( 3 )]
+transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 6, 0 )
 script = ExtResource( 5 )
 
 [node name="Head" type="Spatial" parent="Player"]
@@ -94,7 +86,7 @@ far = 8192.0
 enabled = true
 
 [node name="CameraBody" type="KinematicBody" parent="."]
-transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -5.96046e-08, 0 )
+transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 8, 0 )
 script = ExtResource( 12 )
 
 [node name="CameraHead" type="Spatial" parent="CameraBody"]
@@ -104,7 +96,7 @@ current = true
 far = 8192.0
 
 [node name="TestPlatform" parent="." instance=ExtResource( 7 )]
-transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, 68, -31.0228, 47 )
+transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, 68, 32.9772, 47 )
 
 [node name="Box" parent="TestPlatform" instance=ExtResource( 6 )]
 transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, -6, 2, 0 )

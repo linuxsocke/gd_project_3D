@@ -37,8 +37,9 @@ jump_is_jetpack = true
 
 [node name="VoxelTerrain" type="VoxelLodTerrain" parent="."]
 stream = SubResource( 1 )
-view_distance = 2048
+view_distance = 1500
 lod_count = 8
+lod_split_scale = 4.0
 viewer_path = NodePath("../Player")
 material = ExtResource( 5 )
 
