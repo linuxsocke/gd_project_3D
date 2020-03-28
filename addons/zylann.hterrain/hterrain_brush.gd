@@ -273,7 +273,7 @@ func paint(height_map, cell_pos_x, cell_pos_y, override_mode):
 			_paint_detail(data, origin_x, origin_y)
 			map_index = _detail_index
 
-	if (mode != MODE_SPLAT):
+	if (mode != MODE_SPLAT): # for splat maps the notification is seperatly in the _paint_splat method
 		data.notify_region_change( \
 			Rect2(origin_x, origin_y, _shape_size, _shape_size), \
 			_get_mode_channel(mode), map_index)

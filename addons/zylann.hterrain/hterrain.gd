@@ -58,6 +58,7 @@ const _api_shader_params = {
 const SHADER_SIMPLE4 = "Classic4"
 const SHADER_SIMPLE4_LITE = "Classic4Lite"
 const SHADER_CUSTOM = "Custom"
+#const SHADER_CUSTOM_LITE = "CustomLite"
 
 const SHADER_CUSTOM_SLOT_COUNT = 8
 
@@ -640,7 +641,7 @@ func generate_procedural():
 				var cliff_amount = clamp(slope + 0.18 + rand_hgt, 0, 1)  
 				splat = splat.linear_interpolate(target_color_1, cliff_amount)
 			else: 
-				var rand_hgt = 0.6 * (hgt - 0.25) 
+				var rand_hgt = 0.7 * (hgt - 0.25) 
 				var cliff_amount = 0
 				if (rand_hgt > 0):
 					cliff_amount = clamp(slope + 0.18 + rand_hgt, 0, 1)  
@@ -837,7 +838,7 @@ func _update_material_params():
 			global_texture = _data.get_texture(HTerrainData.CHANNEL_GLOBAL_ALBEDO)
 		res.x = _data.get_resolution()
 		res.y = res.x
-	for splat_index in _splat_count_for_shader():  # check whether this is used often
+	for splat_index in _channel_count_for_shader(HTerrainData.CHANNEL_SPLAT):  # check whether this is used often
 		if has_data():
 			splat_texture = _data.get_texture(HTerrainData.CHANNEL_SPLAT, splat_index)
 		var splat_param = str(SHADER_PARAM_SPLAT_TEXTURE, "_", splat_index) if splat_index != 0 else SHADER_PARAM_SPLAT_TEXTURE
@@ -875,7 +876,7 @@ func setup_globalmap_material(mat: ShaderMaterial):
 	if has_data():
 		color_texture = _data.get_texture(HTerrainData.CHANNEL_COLOR)
 		
-	for splat_index in _splat_count_for_shader():  # check whether this is used often
+	for splat_index in 1: #_channel_count_for_shader(HTerrainData.CHANNEL_SPLAT):
 		if has_data():
 			splat_texture = _data.get_texture(HTerrainData.CHANNEL_SPLAT, splat_index)
 		var splat_param = str(SHADER_PARAM_SPLAT_TEXTURE, "_", splat_index) if splat_index != 0 else SHADER_PARAM_SPLAT_TEXTURE
@@ -1340,9 +1341,12 @@ func _get_configuration_warning():
 	return ""
 
 
-func _splat_count_for_shader():
-	if _shader_type == SHADER_CUSTOM:
-		return int(SHADER_CUSTOM_SLOT_COUNT / 4) 
+func _channel_count_for_shader(channel: int):
+	if channel == HTerrainData.CHANNEL_SPLAT:
+		if _shader_type == SHADER_CUSTOM:
+			return int(SHADER_CUSTOM_SLOT_COUNT / 4) 
+		else: 
+			return 1
 	else: 
 		return 1
 

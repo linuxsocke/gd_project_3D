@@ -114,7 +114,7 @@ void fragment() {
 
 	float globalmap_factor = clamp((v_distance - u_globalmap_blend_start) * u_globalmap_blend_distance, 0.0, 1.0);
 	globalmap_factor *= globalmap_factor; // slower start, faster transition but far away
-	vec3 global_albedo = texture(u_ground_albedo_bump_0, UV).rgb;
+	vec3 global_albedo = texture(u_terrain_globalmap, UV).rgb;
 	ALBEDO = global_albedo;
 
 	// Doing this branch allows to spare a bunch of texture fetches for distant pixels.
