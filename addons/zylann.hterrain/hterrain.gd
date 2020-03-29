@@ -755,6 +755,8 @@ func set_shader_type(type: String):
 			_material.shader = load(CLASSIC4_SHADER_PATH) as Shader
 
 	_material_params_need_update = true
+
+	emit_signal("shader_type_changed", type) 
 	
 	if Engine.editor_hint:
 		property_list_changed_notify()
@@ -861,9 +863,13 @@ func setup_globalmap_material(mat: ShaderMaterial):
 
 	if has_data():
 		color_texture = _data.get_texture(HTerrainData.CHANNEL_COLOR)
-		splat_texture = _data.get_texture(HTerrainData.CHANNEL_SPLAT)
+		
+	for splat_index in 1: #_channel_count_for_shader(HTerrainData.CHANNEL_SPLAT):
+		if has_data():
+			splat_texture = _data.get_texture(HTerrainData.CHANNEL_SPLAT, splat_index)
+		var splat_param = str(SHADER_PARAM_SPLAT_TEXTURE, "_", splat_index) if splat_index != 0 else SHADER_PARAM_SPLAT_TEXTURE
+		_material.set_shader_param(splat_param, splat_texture)
 
-	mat.set_shader_param("u_terrain_splatmap", splat_texture)
 	mat.set_shader_param("u_terrain_colormap", color_texture)
 	mat.set_shader_param("u_depth_blending", get_shader_param("u_depth_blending"))
 	mat.set_shader_param("u_ground_uv_scale", get_shader_param("u_ground_uv_scale"))

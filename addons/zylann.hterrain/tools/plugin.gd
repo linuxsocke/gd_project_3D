@@ -107,7 +107,7 @@ func _enter_tree():
 	var menu := MenuButton.new()
 	menu.set_text("Terrain")
 	menu.get_popup().add_item("Import maps...", MENU_IMPORT_MAPS)
-	menu.get_popup().add_item("Generate...", MENU_GENERATE)
+	menu.get_popup().add_item("Generate Heightmap...", MENU_GENERATE)
 	menu.get_popup().add_item("Resize...", MENU_RESIZE)
 	menu.get_popup().add_item("Bake global map", MENU_BAKE_GLOBALMAP)
 	menu.get_popup().add_separator()
@@ -292,6 +292,7 @@ func edit(object):
 	_generate_mesh_dialog.set_terrain(_node)
 	_resize_dialog.set_terrain(_node)
 	_export_image_dialog.set_terrain(_node)
+
 	
 	if object is HTerrainDetailLayer:
 		# Auto-select layer for painting

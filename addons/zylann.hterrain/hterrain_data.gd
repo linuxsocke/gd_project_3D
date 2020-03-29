@@ -569,6 +569,27 @@ func _edit_add_map(map_type: int) -> int:
 	return index
 
 
+func edit_add_map(map_type: int) -> int:
+	# TODO Check minimum and maximum instances of a given map
+	print("Adding map of type ", get_channel_name(map_type))
+	while map_type >= len(_maps):
+		_maps.append([])
+	var maps = _maps[map_type]
+	var map = Map.new(_get_free_id(map_type))
+
+	var im = Image.new()
+	im.create(_resolution, _resolution, false, get_channel_format(map_type))
+	var fill_color = _get_channel_default_fill(map_type)
+	if fill_color != null:
+		im.fill(fill_color)
+	map.image = im
+
+	var index = len(maps)
+	maps.append(map)
+	emit_signal("map_added", map_type, index)
+	return index
+
+
 func _edit_remove_map(map_type: int, index: int):
 	# TODO Check minimum and maximum instances of a given map
 	print("Removing map ", get_channel_name(map_type), " at index ", index)
@@ -1368,4 +1389,6 @@ static func _get_channel_default_fill(c: int):
 static func _get_channel_default_count(c: int) -> int:
 	if c == CHANNEL_DETAIL:
 		return 0
+	if c == CHANNEL_SPLAT:
+		return 1	
 	return 1
