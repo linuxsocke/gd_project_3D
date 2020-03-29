@@ -12,7 +12,6 @@ const Util = preload("../../util/util.gd")
 const TextureGenerator = preload("texture_generator.gd")
 
 signal progress_notified(info) # { "progress": real, "message": string, "finished": bool }
-signal permanent_change_performed(message)
 
 onready var _inspector = get_node("VBoxContainer/Editor/Settings/Inspector")
 onready var _preview = get_node("VBoxContainer/Editor/Preview/TerrainPreview")
@@ -25,6 +24,9 @@ var _applying = false
 var _generator = null
 var _generated_textures = [null, null]
 var _dialog_visible = false
+#var _undo_map_ids := {}
+#var _image_cache = null
+#var _undo_redo : UndoRedo
 
 
 static func get_shader(shader_name):
@@ -358,7 +360,7 @@ func _on_TextureGenerator_completed():
 	#data.notify_region_change(Rect2(0, 0, resolution, resolution), HTerrainData.CHANNEL_HEIGHT)
 
 	emit_signal("progress_notified", { "finished": true })
-	emit_signal("permanent_change_performed", "Generate terrain")
+	#emit_signal("permanent_change_performed", "Generate terrain")
 	print("Done")
 
 

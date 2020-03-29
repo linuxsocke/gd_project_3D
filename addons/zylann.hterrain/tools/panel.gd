@@ -11,10 +11,10 @@ signal detail_selected(index)
 signal detail_list_changed
 
 
-onready var _minimap = get_node("HSplitContainer/HSplitContainer/Minimap")
-onready var _brush_editor = get_node("HSplitContainer/BrushEditor")
-onready var _texture_editor = get_node("HSplitContainer/HSplitContainer/HSplitContainer/TextureEditor")
-onready var _detail_editor = get_node("HSplitContainer/HSplitContainer/HSplitContainer/DetailEditor")
+onready var _minimap = $HSplitContainer/HSplitContainer/Minimap
+onready var _brush_editor = $HSplitContainer/BrushEditor
+onready var _texture_editor = $HSplitContainer/HSplitContainer/HSplitContainer/TextureEditor
+onready var _detail_editor = $HSplitContainer/HSplitContainer/HSplitContainer/DetailEditor
 
 
 func setup_dialogs(base_control):
@@ -53,6 +53,7 @@ func set_detail_layer_index(index):
 
 func _on_DetailEditor_detail_list_changed():
 	emit_signal("detail_list_changed")
+
 
 func set_texture_list():
 	_texture_editor.set_texture_list()

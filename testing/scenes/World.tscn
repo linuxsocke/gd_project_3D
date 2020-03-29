@@ -1,4 +1,4 @@
-[gd_scene load_steps=33 format=2]
+[gd_scene load_steps=31 format=2]
 
 [ext_resource path="res://testing/scenes/Ball.tscn" type="PackedScene" id=1]
 [ext_resource path="res://testing/scenes/GoalPiece.tscn" type="PackedScene" id=2]
@@ -15,21 +15,19 @@
 [ext_resource path="res://assets/textures/rocks_07/rock07_normal.png" type="Texture" id=13]
 [ext_resource path="res://assets/textures/rocks_11/rocks_11_bump.png" type="Texture" id=14]
 [ext_resource path="res://terrain_data/data.hterrain" type="Resource" id=15]
+[ext_resource path="res://assets/textures/ground_03/ground_03_normal.png" type="Texture" id=16]
 [ext_resource path="res://assets/textures/rocks_11/rocks_11_normal.png" type="Texture" id=17]
 [ext_resource path="res://assets/textures/rocks_07/rock07_bumb_atlernativ.png" type="Texture" id=18]
-[ext_resource path="res://assets/textures/ground_37/ground_37_bump_ao_dark.png" type="Texture" id=19]
+[ext_resource path="res://assets/textures/ground_03/ground_03_bump_dark.png" type="Texture" id=19]
+[ext_resource path="res://assets/textures/ground_31/ground_31_bump_ao.png" type="Texture" id=20]
 [ext_resource path="res://fps_demo/support/UI.tscn" type="PackedScene" id=21]
 [ext_resource path="res://testing/scenes/WorldEnvironment.tscn" type="PackedScene" id=22]
-[ext_resource path="res://assets/textures/ground_03/ground_03_normal.png" type="Texture" id=24]
+[ext_resource path="res://assets/textures/ground_31/ground_31_normal.png" type="Texture" id=23]
 [ext_resource path="res://addons/zylann.hterrain/shaders/custom.shader" type="Shader" id=25]
 [ext_resource path="res://assets/textures/ground_09/ground_09_normal.png" type="Texture" id=26]
 [ext_resource path="res://assets/textures/rocks_16/rocks_16_bump_light.png" type="Texture" id=27]
-[ext_resource path="res://assets/textures/leaves/leaves_nornal.png" type="Texture" id=28]
 [ext_resource path="res://assets/textures/rocks_16/rocks_16_normal.png" type="Texture" id=30]
-[ext_resource path="res://assets/textures/leaves/leaves_bump.png" type="Texture" id=31]
-[ext_resource path="res://assets/textures/ground_03/ground_03_bump_dark.png" type="Texture" id=32]
 [ext_resource path="res://assets/textures/ground_09/ground_09_bump_ao.png" type="Texture" id=33]
-[ext_resource path="res://assets/textures/ground_37/ground_37_normal.png" type="Texture" id=35]
 
 [sub_resource type="BoxShape" id=1]
 
@@ -41,10 +39,6 @@ script = ExtResource( 10 )
 [node name="HTerrain" type="Spatial" parent="."]
 transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, -678, -193.333, -962 )
 script = ExtResource( 9 )
-collision_enabled = true
-ambient_wind = 0.0
-lod_scale = 2.0
-map_scale = Vector3( 1, 1, 1 )
 _terrain_data = ExtResource( 15 )
 chunk_size = 32
 shader_type = "Custom"
@@ -62,14 +56,14 @@ ground/albedo_bump_2 = ExtResource( 18 )
 ground/normal_roughness_2 = ExtResource( 13 )
 ground/albedo_bump_3 = ExtResource( 14 )
 ground/normal_roughness_3 = ExtResource( 17 )
-ground/albedo_bump_4 = ExtResource( 27 )
-ground/normal_roughness_4 = ExtResource( 30 )
-ground/albedo_bump_5 = ExtResource( 32 )
-ground/normal_roughness_5 = ExtResource( 24 )
-ground/albedo_bump_6 = ExtResource( 19 )
-ground/normal_roughness_6 = ExtResource( 35 )
-ground/albedo_bump_7 = ExtResource( 31 )
-ground/normal_roughness_7 = ExtResource( 28 )
+ground/albedo_bump_4 = ExtResource( 19 )
+ground/normal_roughness_4 = ExtResource( 16 )
+ground/albedo_bump_5 = null
+ground/normal_roughness_5 = null
+ground/albedo_bump_6 = null
+ground/normal_roughness_6 = null
+ground/albedo_bump_7 = ExtResource( 20 )
+ground/normal_roughness_7 = ExtResource( 23 )
 
 [node name="Player" parent="." instance=ExtResource( 3 )]
 transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 6, 0 )

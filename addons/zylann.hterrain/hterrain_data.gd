@@ -28,32 +28,31 @@ const META_VERSION = "0.11"
 
 signal resolution_changed
 signal region_changed(x, y, w, h, channel)
-# TODO Instead of message, send a state enum and a var (for translation and code semantic)
-signal progress_notified(info) # { "progress": real, "message": string, "finished": bool }
 signal map_added(type, index)
 signal map_removed(type, index)
 signal map_changed(type, index)
 
 
 class VerticalBounds:
-	var minv = 0
-	var maxv = 0
+	var minv := 0
+	var maxv := 0
 
 
 # A map is a texture covering the terrain.
 # The usage of a map depends on its type (heightmap, normalmap, splatmap...).
 class Map:
-	var texture
+	var texture: Texture
 	# Reference used in case we need the data CPU-side
-	var image
+	var image: Image
 	# ID used for saving, because when adding/removing maps,
 	# we shouldn't rename texture files just because the indexes change.
-	# This is mostly for internal keeping. The API still uses indexes that may shift if your remove a map.
-	var id = -1
+	# This is mostly for internal keeping.
+	# The API still uses indexes that may shift if your remove a map.
+	var id := -1
 	# Should be set to true if the map has unsaved modifications.
-	var modified = true
+	var modified := true
 
-	func _init(p_id):
+	func _init(p_id: int):
 		id = p_id
 
 
@@ -119,10 +118,12 @@ func set_resolution2(p_res, update_normals):
 # Note that no upload to GPU is done, you have to do it once you're done with all changes,
 # by calling `notify_region_change` or `notify_full_change`.
 # p_res: new resolution. Must be a power of two + 1.
-# stretch: if true, the terrain will be stretched in X and Z axes. If false, it will be cropped or expanded.
+# stretch: if true, the terrain will be stretched in X and Z axes.
+#          If false, it will be cropped or expanded.
 # anchor: if stretch is false, decides which side or corner to crop/expand the terrain from.
 #
-# There is an off-by-one in the data, so for example a map of 512x512 will actually have 513x513 cells.
+# There is an off-by-one in the data,
+# so for example a map of 512x512 will actually have 513x513 cells.
 # Here is why:
 # If we had an even amount of cells, it would produce this situation when making LOD chunks:
 #
@@ -140,7 +141,8 @@ func set_resolution2(p_res, update_normals):
 # We need an off-by-one because quads making up chunks SHARE their consecutive vertices.
 # One quad needs at least 2x2 cells to exist.
 # Two quads of the heightmap share an edge, which needs a total of 3x3 cells, not 4x4.
-# One chunk has 16x16 quads, so it needs 17x17 cells, not 16, where the last cell is shared with the next chunk.
+# One chunk has 16x16 quads, so it needs 17x17 cells,
+# not 16, where the last cell is shared with the next chunk.
 # As a result, a map of 4x4 chunks needs 65x65 cells, not 64x64.
 func resize(p_res: int, stretch := true, anchor := Vector2(-1, -1)):
 	assert(typeof(p_res) == TYPE_INT)
@@ -157,19 +159,20 @@ func resize(p_res: int, stretch := true, anchor := Vector2(-1, -1)):
 	# Power of two is important for LOD.
 	# Also, grid data is off by one,
 	# because for an even number of quads you need an odd number of vertices.
-	# To prevent size from increasing at every deserialization, remove 1 before applying power of two.
+	# To prevent size from increasing at every deserialization,
+	# remove 1 before applying power of two.
 	p_res = Util.next_power_of_two(p_res - 1) + 1
 
 	_resolution = p_res;
 
 	for channel in range(CHANNEL_COUNT):
-		var maps = _maps[channel]
+		var maps := _maps[channel] as Array
 
 		for index in len(maps):
 			print("Resizing ", _get_map_debug_name(channel, index), "...")
 
-			var map = maps[index]
-			var im = map.image
+			var map := maps[index] as Map
+			var im := map.image
 
 			if im == null:
 				im = Image.new()
@@ -189,7 +192,8 @@ func resize(p_res: int, stretch := true, anchor := Vector2(-1, -1)):
 						im.resize(_resolution, _resolution)
 					else:
 						map.image = Util.get_cropped_image( \
-							im, _resolution, _resolution, _get_channel_default_fill(channel), anchor)
+							im, _resolution, _resolution, \
+							_get_channel_default_fill(channel), anchor)
 
 			map.modified = true
 
@@ -199,7 +203,6 @@ func resize(p_res: int, stretch := true, anchor := Vector2(-1, -1)):
 
 
 static func _get_clamped(im: Image, x: int, y: int) -> Color:
-
 	if x < 0:
 		x = 0
 	elif x >= im.get_width():
@@ -234,15 +237,15 @@ func get_height_at(x: int, y: int) -> float:
 func get_interpolated_height_at(pos: Vector3) -> float:
 
 	# Height data must be loaded in RAM
-	var im = get_image(CHANNEL_HEIGHT)
+	var im := get_image(CHANNEL_HEIGHT)
 	assert(im != null)
 
 	# The function takes a Vector3 for convenience so it's easier to use in 3D scripting
-	var x0 = int(floor(pos.x))
-	var y0 = int(floor(pos.z))
+	var x0 := int(floor(pos.x))
+	var y0 := int(floor(pos.z))
 
-	var xf = pos.x - x0
-	var yf = pos.z - y0
+	var xf := pos.x - x0
+	var yf := pos.z - y0
 
 	im.lock()
 	var h00 = _get_clamped(im, x0, y0).r
@@ -263,13 +266,13 @@ func get_interpolated_height_at(pos: Vector3) -> float:
 func get_heights_region(x0: int, y0: int, w: int, h: int) -> PoolRealArray:
 	var im = get_image(CHANNEL_HEIGHT)
 	assert(im != null)
+	
+	var min_x := Util.clamp_int(x0, 0, im.get_width())
+	var min_y := Util.clamp_int(y0, 0, im.get_height())
+	var max_x := Util.clamp_int(x0 + w, 0, im.get_width() + 1)
+	var max_y := Util.clamp_int(y0 + h, 0, im.get_height() + 1)
 
-	var min_x = Util.clamp_int(x0, 0, im.get_width())
-	var min_y = Util.clamp_int(y0, 0, im.get_height())
-	var max_x = Util.clamp_int(x0 + w, 0, im.get_width() + 1)
-	var max_y = Util.clamp_int(y0 + h, 0, im.get_height() + 1)
-
-	var heights = PoolRealArray()
+	var heights := PoolRealArray()
 
 	var area = (max_x - min_x) * (max_y - min_y)
 	if area == 0:
@@ -280,7 +283,7 @@ func get_heights_region(x0: int, y0: int, w: int, h: int) -> PoolRealArray:
 
 	im.lock()
 
-	var i = 0
+	var i := 0
 	for y in range(min_y, max_y):
 		for x in range(min_x, max_x):
 			heights[i] = im.get_pixel(x, y).r
@@ -301,23 +304,26 @@ func get_all_heights() -> PoolRealArray:
 # Call this function after you end modifying a map.
 # It will commit the change to the GPU so the change will take effect.
 # In the editor, it will also mark the map as modified so it will be saved when needed.
-# Finally, it will emit `region_changed`, which allows other systems to catch up (like physics or grass)
+# Finally, it will emit `region_changed`, 
+# which allows other systems to catch up (like physics or grass)
+#
 # p_rect: modified area.
 # channel: which kind of map changed
 # index: index of the map that changed
 func notify_region_change(p_rect: Rect2, channel: int, index := 0):
 	assert(channel >= 0 and channel < CHANNEL_COUNT)
 	
-	var min_x = int(p_rect.position.x)
-	var min_y = int(p_rect.position.y)
-	var size_x = int(p_rect.size.x)
-	var size_y = int(p_rect.size.y)
+	var min_x := int(p_rect.position.x)
+	var min_y := int(p_rect.position.y)
+	var size_x := int(p_rect.size.x)
+	var size_y := int(p_rect.size.y)
 	
 	if channel == CHANNEL_HEIGHT:
 		assert(index == 0)
-		# TODO when drawing very large patches, this might get called too often and would slow down.
-		# for better user experience, we could set chunks AABBs to a very large height just while drawing,
-		# and set correct AABBs as a background task once done
+		# TODO when drawing very large patches,
+		# this might get called too often and would slow down.
+		# for better user experience, we could set chunks AABBs to a very large
+		# height just while drawing, and set correct AABBs as a background task once done
 		_update_vertical_bounds(min_x, min_y, size_x, size_y)
 
 	_upload_region(channel, index, min_x, min_y, size_x, size_y)
@@ -345,7 +351,6 @@ func _edit_set_disable_apply_undo(e: bool):
 
 
 func _edit_apply_undo(undo_data: Dictionary):
-
 	if _edit_disable_apply_undo:
 		return
 
@@ -373,7 +378,6 @@ func _edit_apply_undo(undo_data: Dictionary):
 	var regions_changed = []
 
 	# Apply
-
 	for i in range(len(chunk_datas)):
 		var cpos_x = chunk_positions[2 * i]
 		var cpos_y = chunk_positions[2 * i + 1]
@@ -392,24 +396,40 @@ func _edit_apply_undo(undo_data: Dictionary):
 		assert(dst_image != null)
 
 		match channel:
-
 			CHANNEL_HEIGHT, \
 			CHANNEL_SPLAT, \
 			CHANNEL_COLOR, \
 			CHANNEL_DETAIL:
 				dst_image.blit_rect(data, data_rect, Vector2(min_x, min_y))
-
 			CHANNEL_NORMAL, \
 			CHANNEL_GLOBAL_ALBEDO:
 				printerr("This is a calculated channel!, no undo on this one\n")
 			_:
 				printerr("Wut? Unsupported undo channel\n");
 
-		# Defer this to a second pass, otherwise it causes order-dependent artifacts on the normal map
-		regions_changed.append([Rect2(min_x, min_y, max_x - min_x, max_y - min_y), channel, index])
+		# Defer this to a second pass,
+		# otherwise it causes order-dependent artifacts on the normal map
+		regions_changed.append([
+			Rect2(min_x, min_y, max_x - min_x, max_y - min_y), channel, index])
 
 	for args in regions_changed:
 		notify_region_change(args[0], args[1], args[2])
+
+
+# Used for undoing full-terrain changes
+func _edit_apply_maps_from_file_cache(image_file_cache, map_ids: Dictionary):
+	if _edit_disable_apply_undo:
+		return
+	for map_type in map_ids:
+		var id = map_ids[map_type]
+		var src_im = image_file_cache.load_image(id)
+		if src_im == null:
+			continue
+		var index := 0
+		var dst_im := get_image(map_type, index)
+		var rect = Rect2(0, 0, src_im.get_height(), src_im.get_height())
+		dst_im.blit_rect(src_im, rect, Vector2())
+		notify_region_change(rect, map_type, index)
 
 
 func _upload_channel(channel: int, index: int):
@@ -543,27 +563,6 @@ func _edit_add_map(map_type: int) -> int:
 	var map = Map.new(_get_free_id(map_type))
 	map.image = Image.new()
 	map.image.create(_resolution, _resolution, false, get_channel_format(map_type))
-	var index = len(maps)
-	maps.append(map)
-	emit_signal("map_added", map_type, index)
-	return index
-
-
-func edit_add_map(map_type: int) -> int:
-	# TODO Check minimum and maximum instances of a given map
-	print("Adding map of type ", get_channel_name(map_type))
-	while map_type >= len(_maps):
-		_maps.append([])
-	var maps = _maps[map_type]
-	var map = Map.new(_get_free_id(map_type))
-
-	var im = Image.new()
-	im.create(_resolution, _resolution, false, get_channel_format(map_type))
-	var fill_color = _get_channel_default_fill(map_type)
-	if fill_color != null:
-		im.fill(fill_color)
-	map.image = im
-
 	var index = len(maps)
 	maps.append(map)
 	emit_signal("map_added", map_type, index)
@@ -714,7 +713,8 @@ func _update_vertical_bounds(origin_in_cells_x: int, origin_in_cells_y: int, \
 	cmax_x = Util.clamp_int(cmax_x, 0, _chunked_vertical_bounds_size_x)
 	cmax_y = Util.clamp_int(cmax_y, 0, _chunked_vertical_bounds_size_y)
 
-	# Note: chunks in _chunked_vertical_bounds share their edge cells and have an actual size of chunk size + 1.
+	# Note: chunks in _chunked_vertical_bounds share their edge cells and
+	# have an actual size of chunk size + 1.
 	var chunk_size_x = VERTICAL_BOUNDS_CHUNK_SIZE + 1
 	var chunk_size_y = VERTICAL_BOUNDS_CHUNK_SIZE + 1
 
@@ -732,7 +732,8 @@ func _update_vertical_bounds(origin_in_cells_x: int, origin_in_cells_y: int, \
 			_compute_vertical_bounds_at(pmin_x, pmin_y, chunk_size_x, chunk_size_y, b);
 
 
-func _compute_vertical_bounds_at(origin_x: int, origin_y: int, size_x: int, size_y: int, out_b: VerticalBounds):
+func _compute_vertical_bounds_at(
+	origin_x: int, origin_y: int, size_x: int, size_y: int, out_b: VerticalBounds):
 
 	var heights = get_image(CHANNEL_HEIGHT)
 	assert(heights != null)
@@ -763,20 +764,6 @@ func _compute_vertical_bounds_at(origin_x: int, origin_y: int, size_x: int, size
 	out_b.maxv = max_height
 
 
-func _notify_progress(message: String, progress: float, finished := false):
-	_progress_complete = finished
-	print("[", int(100.0 * progress), "%] ", message)
-	emit_signal("progress_notified", {
-		"message": message,
-		"progress": progress,
-		"finished": finished
-	})
-
-
-func _notify_progress_complete():
-	_notify_progress("Done", 1.0, true)
-
-
 func save_data(data_dir: String):
 	if not _is_any_map_modified():
 		print("Terrain data has no modifications to save")
@@ -786,7 +773,7 @@ func save_data(data_dir: String):
 
 	_save_metadata(data_dir.plus_file(META_FILENAME))
 
-	_notify_progress("Saving terrain data...", 0.0)
+	print("Saving terrain data...")
 
 	var map_count = _get_total_map_count()
 
@@ -801,9 +788,8 @@ func save_data(data_dir: String):
 				print("Skipping non-modified ", _get_map_debug_name(channel, index))
 				continue
 
-			var p = 0.1 + 0.9 * float(pi) / float(map_count)
-			_notify_progress(str("Saving map ", _get_map_debug_name(channel, index), \
-				" as ", _get_map_filename(channel, index), "..."), p)
+			print("Saving map ", _get_map_debug_name(channel, index),
+				" as ", _get_map_filename(channel, index), "...")
 
 			_save_channel(data_dir, channel, index)
 
@@ -811,9 +797,7 @@ func save_data(data_dir: String):
 			pi += 1
 
 	# TODO In editor, trigger reimport on generated assets
-
 	_locked = false
-	_notify_progress_complete()
 
 
 func _is_any_map_modified() -> bool:
@@ -881,7 +865,8 @@ func _deserialize_metadata(dict: Dictionary) -> bool:
 		return false
 
 	if dict.version != META_VERSION:
-		printerr("Terrain metadata version mismatch. Got ", dict.version, ", expected ", META_VERSION)
+		printerr("Terrain metadata version mismatch. Got ", 
+			dict.version, ", expected ", META_VERSION)
 		return false
 
 	var data = dict["maps"]
@@ -915,7 +900,7 @@ func load_data(dir_path: String):
 
 	_load_metadata(dir_path.plus_file(META_FILENAME))
 
-	_notify_progress("Loading terrain data...", 0.0)
+	print("Loading terrain data...")
 
 	var channel_instance_sum = _get_total_map_count()
 	var pi = 0
@@ -926,10 +911,8 @@ func load_data(dir_path: String):
 		var maps = _maps[map_type]
 
 		for index in range(len(maps)):
-
-			var p = 0.1 + 0.6 * float(pi) / float(channel_instance_sum)
-			_notify_progress(str("Loading map ", _get_map_debug_name(map_type, index), \
-				" from ", _get_map_filename(map_type, index), "..."), p)
+			print("Loading map ", _get_map_debug_name(map_type, index),
+				" from ", _get_map_filename(map_type, index), "...")
 
 			_load_channel(dir_path, map_type, index)
 
@@ -938,15 +921,13 @@ func load_data(dir_path: String):
 
 			pi += 1
 
-	_notify_progress("Calculating vertical bounds...", 0.8)
+	print("Calculating vertical bounds...")
 	_update_all_vertical_bounds()
 
-	_notify_progress("Notify resolution change...", 0.9)
+	print("Notify resolution change...")
 
 	_locked = false
 	emit_signal("resolution_changed")
-
-	_notify_progress_complete()
 
 
 func get_data_dir() -> String:
@@ -1066,7 +1047,8 @@ func _load_channel(dir: String, channel: int, index: int) -> bool:
 
 	if _channel_can_be_saved_as_png(channel):
 		fpath += ".png"
-		# In this particular case, we can use Godot ResourceLoader directly, if the texture got imported.
+		# In this particular case, we can use Godot ResourceLoader directly,
+		# if the texture got imported.
 
 		if Engine.editor_hint:
 			# But in the editor we want textures to be editable,
@@ -1141,7 +1123,8 @@ static func _try_delete_0_8_0_heightmap(fpath: String):
 #
 # TODO Plan is to make this function threaded, in case import takes too long.
 # So anything that could mess with the main thread should be avoided.
-# Eventually, it would be temporarily removed from the terrain node to work in isolation during import.
+# Eventually, it would be temporarily removed from the terrain node to work 
+# in isolation during import.
 func _edit_import_maps(input: Dictionary) -> bool:
 	assert(typeof(input) == TYPE_DICTIONARY)
 
@@ -1161,7 +1144,8 @@ func _edit_import_maps(input: Dictionary) -> bool:
 	return true
 
 
-# Provided an arbitrary width and height, returns the closest size the terrain actually supports
+# Provided an arbitrary width and height,
+# returns the closest size the terrain actuallysupports
 static func get_adjusted_map_size(width: int, height: int) -> int:
 	var width_po2 = Util.next_power_of_two(width - 1) + 1
 	var height_po2 = Util.next_power_of_two(height - 1) + 1
@@ -1384,6 +1368,4 @@ static func _get_channel_default_fill(c: int):
 static func _get_channel_default_count(c: int) -> int:
 	if c == CHANNEL_DETAIL:
 		return 0
-	if c == CHANNEL_SPLAT:
-		return 1	
 	return 1

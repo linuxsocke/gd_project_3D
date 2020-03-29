@@ -6,19 +6,21 @@ const HTerrain = preload("../hterrain.gd")
 const HTerrainDetailLayer = preload("../hterrain_detail_layer.gd")
 const HTerrainData = preload("../hterrain_data.gd")
 const HTerrainMesher = preload("../hterrain_mesher.gd")
-const PreviewGenerator = preload("preview_generator.gd")
+const PreviewGenerator = preload("./preview_generator.gd")
 const Brush = preload("../hterrain_brush.gd")
-const BrushDecal = preload("brush/decal.gd")
+const BrushDecal = preload("./brush/decal.gd")
 const Util = preload("../util/util.gd")
-const LoadTextureDialog = preload("load_texture_dialog.gd")
-const EditPanel = preload("panel.tscn")
-const ProgressWindow = preload("progress_window.tscn")
-const GeneratorDialog = preload("generator/generator_dialog.tscn")
+const LoadTextureDialog = preload("./load_texture_dialog.gd")
+const GlobalMapBaker = preload("./globalmap_baker.gd")
+const ImageFileCache = preload("../util/image_file_cache.gd")
+
+const EditPanel = preload("./panel.tscn")
+const ProgressWindow = preload("./progress_window.tscn")
+const GeneratorDialog = preload("./generator/generator_dialog.tscn")
 const ProceduralGeneratorDialog = preload("generator/procedural_generator_dialog.tscn")
-const ImportDialog = preload("importer/importer_dialog.tscn")
-const GenerateMeshDialog = preload("generate_mesh_dialog.tscn")
-const ResizeDialog = preload("resize_dialog/resize_dialog.tscn")
-const GlobalMapBaker = preload("globalmap_baker.gd")
+const ImportDialog = preload("./importer/importer_dialog.tscn")
+const GenerateMeshDialog = preload("./generate_mesh_dialog.tscn")
+const ResizeDialog = preload("./resize_dialog/resize_dialog.tscn")
 const ExportImageDialog = preload("./exporter/export_image_dialog.tscn")
 
 const MENU_IMPORT_MAPS = 0
@@ -49,23 +51,25 @@ var _resize_dialog = null
 var _globalmap_baker = null
 var _menu_button : MenuButton
 var _terrain_had_data_previous_frame = false
+var _image_cache : ImageFileCache
 
-var _brush = null
-var _brush_decal = null
-var _mouse_pressed = false
+var _brush : Brush = null
+var _brush_decal : BrushDecal = null
+var _mouse_pressed := false
 var _pending_paint_action = null
-var _pending_paint_completed = false
+var _pending_paint_completed := false
 
 
-static func get_icon(name):
-	return load("res://addons/zylann.hterrain/tools/icons/icon_" + name + ".svg")
+static func get_icon(name: String) -> Texture:
+	return load("res://addons/zylann.hterrain/tools/icons/icon_" + name + ".svg") as Texture
 
 
 func _enter_tree():
 	print("HTerrain plugin Enter tree")
 	
 	add_custom_type("HTerrain", "Spatial", HTerrain, get_icon("heightmap_node"))
-	add_custom_type("HTerrainDetailLayer", "Spatial", HTerrainDetailLayer, get_icon("detail_layer_node"))
+	add_custom_type("HTerrainDetailLayer", "Spatial", HTerrainDetailLayer, 
+		get_icon("detail_layer_node"))
 	add_custom_type("HTerrainData", "Resource", HTerrainData, get_icon("heightmap_data"))
 	
 	_preview_generator = PreviewGenerator.new()
@@ -78,8 +82,10 @@ func _enter_tree():
 	_brush_decal.set_shape(_brush.get_shape())
 	_brush.connect("shape_changed", _brush_decal, "set_shape")
 	
-	var editor_interface = get_editor_interface()
-	var base_control = editor_interface.get_base_control()
+	_image_cache = ImageFileCache.new("user://hterrain_image_cache")
+	
+	var editor_interface := get_editor_interface()
+	var base_control := editor_interface.get_base_control()
 	_load_texture_dialog = LoadTextureDialog.new()
 	base_control.add_child(_load_texture_dialog)
 	
@@ -98,10 +104,10 @@ func _enter_tree():
 	add_control_to_container(EditorPlugin.CONTAINER_SPATIAL_EDITOR_MENU, _toolbar)
 	_toolbar.hide()
 	
-	var menu = MenuButton.new()
+	var menu := MenuButton.new()
 	menu.set_text("Terrain")
 	menu.get_popup().add_item("Import maps...", MENU_IMPORT_MAPS)
-	menu.get_popup().add_item("Generate Heightmap...", MENU_GENERATE)
+	menu.get_popup().add_item("Generate...", MENU_GENERATE)
 	menu.get_popup().add_item("Resize...", MENU_RESIZE)
 	menu.get_popup().add_item("Bake global map", MENU_BAKE_GLOBALMAP)
 	menu.get_popup().add_separator()
@@ -117,7 +123,7 @@ func _enter_tree():
 	_toolbar.add_child(menu)
 	_menu_button = menu
 	
-	var mode_icons = {}
+	var mode_icons := {}
 	mode_icons[Brush.MODE_ADD] = get_icon("heightmap_raise")
 	mode_icons[Brush.MODE_SUBTRACT] = get_icon("heightmap_lower")
 	mode_icons[Brush.MODE_SMOOTH] = get_icon("heightmap_smooth")
@@ -128,7 +134,7 @@ func _enter_tree():
 	mode_icons[Brush.MODE_DETAIL] = get_icon("grass")
 	mode_icons[Brush.MODE_MASK] = get_icon("heightmap_mask")
 	
-	var mode_tooltips = {}
+	var mode_tooltips := {}
 	mode_tooltips[Brush.MODE_ADD] = "Raise"
 	mode_tooltips[Brush.MODE_SUBTRACT] = "Lower"
 	mode_tooltips[Brush.MODE_SMOOTH] = "Smooth"
@@ -141,7 +147,7 @@ func _enter_tree():
 	_toolbar.add_child(VSeparator.new())
 	
 	# I want modes to be in that order in the GUI
-	var ordered_brush_modes = [
+	var ordered_brush_modes := [
 		Brush.MODE_ADD,
 		Brush.MODE_SUBTRACT,
 		Brush.MODE_SMOOTH,
@@ -152,10 +158,10 @@ func _enter_tree():
 		Brush.MODE_MASK
 	]
 	
-	var mode_group = ButtonGroup.new()
+	var mode_group := ButtonGroup.new()
 	
 	for mode in ordered_brush_modes:
-		var button = ToolButton.new()
+		var button := ToolButton.new()
 		button.icon = mode_icons[mode]
 		button.set_tooltip(mode_tooltips[mode])
 		button.set_toggle_mode(true)
@@ -171,12 +177,12 @@ func _enter_tree():
 	
 	_generator_dialog = GeneratorDialog.instance()
 	_generator_dialog.connect("progress_notified", self, "_terrain_progress_notified")
-	_generator_dialog.connect("permanent_change_performed", self, "_on_permanent_change_performed")
+	_generator_dialog.set_image_cache(_image_cache)
+	_generator_dialog.set_undo_redo(get_undo_redo())
 	base_control.add_child(_generator_dialog)
 
 	_procedural_generator_dialog = ProceduralGeneratorDialog.instance()
 	_procedural_generator_dialog.connect("progress_notified", self, "_terrain_progress_notified")
-	_procedural_generator_dialog.connect("permanent_change_performed", self, "_on_permanent_change_performed")
 	base_control.add_child(_procedural_generator_dialog)
 
 	_import_dialog = ImportDialog.instance()
@@ -245,6 +251,9 @@ func _exit_tree():
 	get_editor_interface().get_resource_previewer().remove_preview_generator(_preview_generator)
 	_preview_generator = null
 	
+	# TODO Manual clear cuz it can't do it automatically due to a Godot bug
+	_image_cache.clear()
+	
 	# TODO https://github.com/godotengine/godot/issues/6254#issuecomment-246139694
 	# This was supposed to be automatic, but was never implemented it seems...
 	remove_custom_type("HTerrain")
@@ -263,14 +272,12 @@ func edit(object):
 	
 	if _node != null:
 		_node.disconnect("tree_exited", self, "_terrain_exited_scene")
-		_node.disconnect("progress_notified", self, "_terrain_progress_notified")
 		_node.disconnect("shader_type_changed", self, "_on_shader_type_changed")
 	
 	_node = node
 	
 	if _node != null:
 		_node.connect("tree_exited", self, "_terrain_exited_scene")
-		_node.connect("progress_notified", self, "_terrain_progress_notified")
 		_node.connect("shader_type_changed", self, "_on_shader_type_changed")
 		_node.on_custom_shader_usage()
 		_brush.set_texture_mode(_node.get_shader_type())
@@ -285,7 +292,6 @@ func edit(object):
 	_generate_mesh_dialog.set_terrain(_node)
 	_resize_dialog.set_terrain(_node)
 	_export_image_dialog.set_terrain(_node)
-
 	
 	if object is HTerrainDetailLayer:
 		# Auto-select layer for painting
@@ -297,9 +303,11 @@ func edit(object):
 
 static func _get_terrain_from_object(object):
 	if object != null and object is Spatial:
+		if not object.is_inside_tree():
+			return null
 		if object is HTerrain:
 			return object
-		if object is HTerrainDetailLayer and object.is_inside_tree() and object.get_parent() is HTerrain:
+		if object is HTerrainDetailLayer and object.get_parent() is HTerrain:
 			return object.get_parent()
 	return null
 
@@ -343,7 +351,8 @@ func make_visible(visible):
 	_brush_decal.update_visibility()
 
 	# TODO Workaround https://github.com/godotengine/godot/issues/6459
-	# When the user selects another node, I want the plugin to release its references to the terrain.
+	# When the user selects another node,
+	# I want the plugin to release its references to the terrain.
 	if not visible:
 		edit(null)
 
@@ -384,7 +393,6 @@ func forward_spatial_gui_input(p_camera, p_event):
 		
 		var hit_pos_in_cells = [0, 0]
 		if _node.cell_raycast(origin, dir, hit_pos_in_cells):
-			
 			_brush_decal.set_position(Vector3(hit_pos_in_cells[0], 0, hit_pos_in_cells[1]))
 						
 			if _mouse_pressed:
@@ -413,7 +421,7 @@ func _process(delta):
 			_brush.paint(_node, _pending_paint_action[0], _pending_paint_action[1], override_mode)
 
 		if _pending_paint_completed:
-			paint_completed()
+			_paint_completed()
 		
 		has_data = (_node.get_data() != null)
 	
@@ -426,7 +434,7 @@ func _process(delta):
 	_pending_paint_action = null
 
 
-func paint_completed():
+func _paint_completed():
 	var heightmap_data = _node.get_data()
 	assert(heightmap_data != null)
 	
@@ -506,17 +514,20 @@ func _menu_item_selected(id):
 			
 		MENU_UPDATE_EDITOR_COLLIDER:
 			# This is for editor tools to be able to use terrain collision.
-			# It's not automatic because keeping this collider up to date is expensive,
-			# but not too bad IMO because that feature is not often used in editor for now.
+			# It's not automatic because keeping this collider up to date is
+			# expensive, but not too bad IMO because that feature is not often
+			# used in editor for now.
 			# If users complain too much about this, there are ways to improve it:
 			#
-			# 1) When the terrain gets deselected, update the terrain collider in a thread automatically.
-			#    This is still expensive but should be easy to do.
+			# 1) When the terrain gets deselected, update the terrain collider
+			#    in a thread automatically. This is still expensive but should
+			#    be easy to do.
 			#
 			# 2) Bullet actually support modifying the heights dynamically,
 			#    as long as we stay within min and max bounds,
-			#    so PR a change to the Godot heightmap collider to support passing a Float Image directly,
-			#    and make it so the data is in sync (no CoW plz!!). It's trickier than 1) but almost free.
+			#    so PR a change to the Godot heightmap collider to support passing
+			#    a Float Image directly, and make it so the data is in sync
+			#    (no CoW plz!!). It's trickier than 1) but almost free.
 			#
 			_node.update_collider()
 		
@@ -537,30 +548,30 @@ func _menu_item_selected(id):
 			print("NYI")
 
 
-func _on_mode_selected(mode):
+func _on_mode_selected(mode: int):
 	print("On mode selected ", mode)
 	_brush.set_mode(mode)
 	_panel.set_brush_editor_display_mode(mode)
 
 
-func _on_texture_selected(index):
+func _on_texture_selected(index: int):
 	# Switch to texture paint mode when a texture is selected
 	_select_brush_mode(Brush.MODE_SPLAT)
 	_brush.set_texture_index(index)
 
 
-func _on_detail_selected(index):
+func _on_detail_selected(index: int):
 	# Switch to detail paint mode when a detail item is selected
 	_select_brush_mode(Brush.MODE_DETAIL)
 	_brush.set_detail_index(index)
 
 
-func _select_brush_mode(mode):
+func _select_brush_mode(mode: int):
 	_toolbar_brush_buttons[mode].pressed = true
 	_on_mode_selected(mode)
 
 
-static func get_size_from_raw_length(flen):
+static func get_size_from_raw_length(flen: int):
 	var side_len = round(sqrt(float(flen/2)))
 	return int(side_len)
 
@@ -589,15 +600,15 @@ func _on_shader_type_changed(shader_type):
 	_panel.set_texture_list()
 
 
-func _on_GenerateMeshDialog_generate_selected(lod):
-	var data = _node.get_data()
+func _on_GenerateMeshDialog_generate_selected(lod: int):
+	var data := _node.get_data()
 	if data == null:
 		printerr("Terrain has no data")
 		return
-	var heightmap = data.get_image(HTerrainData.CHANNEL_HEIGHT)
-	var scale = _node.map_scale
-	var mesh = HTerrainMesher.make_heightmap_mesh(heightmap, lod, scale)
-	var mi = MeshInstance.new()
+	var heightmap := data.get_image(HTerrainData.CHANNEL_HEIGHT)
+	var scale := _node.map_scale
+	var mesh := HTerrainMesher.make_heightmap_mesh(heightmap, lod, scale)
+	var mi := MeshInstance.new()
 	mi.name = str(_node.name, "_FullMesh")
 	mi.mesh = mesh
 	mi.transform = _node.transform
@@ -606,13 +617,59 @@ func _on_GenerateMeshDialog_generate_selected(lod):
 
 
 # TODO Workaround for https://github.com/Zylann/godot_heightmap_plugin/issues/101
-func _on_permanent_change_performed(message):
-	var data = _node.get_data()
+func _on_permanent_change_performed(message: String):
+	var data := _node.get_data()
 	if data == null:
 		printerr("Terrain has no data")
 		return
-	var ur = get_undo_redo()
+	var ur := get_undo_redo()
 	ur.create_action(message)
 	ur.add_do_method(data, "_dummy_function")
 	#ur.add_undo_method(data, "_dummy_function")
 	ur.commit_action()
+
+
+# TEST
+#func _physics_process(delta):
+#	if Input.is_key_pressed(KEY_KP_0):
+#		_debug_spawn_collider_indicators()
+
+
+func _debug_spawn_collider_indicators():
+	var root = get_editor_interface().get_edited_scene_root()
+	var terrain := Util.find_first_node(root, HTerrain) as HTerrain
+	if terrain == null:
+		return
+	
+	var test_root : Spatial
+	if not terrain.has_node("__DEBUG"):
+		test_root = Spatial.new()
+		test_root.name = "__DEBUG"
+		terrain.add_child(test_root)
+	else:
+		test_root = terrain.get_node("__DEBUG")
+	
+	var space_state := terrain.get_world().direct_space_state
+	var hit_material = SpatialMaterial.new()
+	hit_material.albedo_color = Color(0, 1, 1)
+	var cube = CubeMesh.new()
+	
+	for zi in 16:
+		for xi in 16:
+			var hit_name = str(xi, "_", zi)
+			var pos = Vector3(xi * 16, 1000, zi * 16)
+			var hit = space_state.intersect_ray(pos, pos + Vector3(0, -2000, 0))
+			var mi : MeshInstance
+			if not test_root.has_node(hit_name):
+				mi = MeshInstance.new()
+				mi.name = hit_name
+				mi.material_override = hit_material
+				mi.mesh = cube
+				test_root.add_child(mi)
+			else:
+				mi = test_root.get_node(hit_name)
+			if hit.empty():
+				mi.hide()
+			else:
+				mi.show()
+				mi.translation = hit.position
